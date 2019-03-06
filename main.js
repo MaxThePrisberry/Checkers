@@ -443,7 +443,7 @@ Boss.prototype.draw = function(bodyColor) {
 		ctx.closePath();
 		ctx.beginPath();
 		ctx.fillStyle = 'green';
-		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 65), 300 * (this.health/this.maxHealth), 15);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 65), boardYToCanvasY(this.pos[1] - this.size - 65), 300 * (this.health/this.maxHealth), 15);
 		ctx.fill();
 	}
 }
