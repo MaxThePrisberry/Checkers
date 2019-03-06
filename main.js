@@ -219,7 +219,7 @@ Map.prototype.drawEnemies = function() {
 	for (let badGuy of this.badGuys) {
 		badGuy.update();
 		if (badGuy.health <= 0){
-			this.badGuys.remove(badGuy);
+			this.badGuys.splice(this.badGuys.indexOf(badGuy), 1);
 		}
 	}
 }
