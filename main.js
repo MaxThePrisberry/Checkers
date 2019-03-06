@@ -386,8 +386,8 @@ function Boss(pos, type){
 	switch (type) {
 		case 0:
 			this.color = 'red';
-			this.maxHealth = 100;
-			this.health = 100;
+			this.maxHealth = 10000;
+			this.health = 10000;
 			this.attack = 3;
 			this.size = 100;
 			this.reach = 60;
