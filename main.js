@@ -469,6 +469,7 @@ Boss.prototype.update = function() {
 			player.currentHealth -= this.attack;
 		}
 		this.turning = angleFromUpInRadians(this.pos, player.pos);
+		this.draw(true);
 	} else {
 		let tempTimer = new Date();
 		if ((tempTimer.getTime() - startTime) % 3000 <= 2){
@@ -476,9 +477,9 @@ Boss.prototype.update = function() {
 			this.turning = randAng;
 			this.vel[0] = Math.cos(randAng) * 100;
 			this.vel[1] = Math.sin(randAng) * 100;
-			this.draw(this.attacking);
+			this.draw(false);
 		} else if ((tempTimer.getTime() - startTime) % 3000 <= 1500){
-			this.draw(this.attacking);
+			this.draw(false);
 		}
 	}
 	
