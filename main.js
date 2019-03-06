@@ -430,7 +430,7 @@ Boss.prototype.draw = function(bodyColor) {
 					ctx.closePath();
 					ctx.beginPath();
 					ctx.fillStyle = 'green';
-					ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 270), 300 * (this.health/this.maxHealth), 12);
+					ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 265), 300 * (this.health/this.maxHealth), 15);
 					ctx.fill();
 				}
 			}
