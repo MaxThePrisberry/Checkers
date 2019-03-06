@@ -185,7 +185,7 @@ function Map(width,height,trees=[new Tree([1000, 1000], 150)]) { // width: int, 
 	this.width = width;
 	this.height = height;
 	this.trees = trees;
-	this.badGuys = [new Boss([300, 300], 0)];
+	this.badGuys = [new Boss([300, 300], 1)];
 }
 
 Map.prototype.drawLandscape = function() {
