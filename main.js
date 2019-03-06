@@ -386,6 +386,7 @@ function Boss(pos, type){
 	switch (type) {
 		case 0:
 			this.color = 'red';
+			this.maxHealth = 100;
 			this.health = 100;
 			this.attack = 3;
 			this.size = 100;
@@ -394,6 +395,7 @@ function Boss(pos, type){
 			break;
 		case 1: 
 			this.color = 'black';
+			this.maxHealth = 1000;
 			this.health = 1000;
 			this.attack = 20;
 			this.size = 300;
@@ -418,6 +420,21 @@ Boss.prototype.draw = function(bodyColor) {
 				//draw the hands
 				drawSerratedCircle([this.pos[0] + (Math.cos(leftHand) * 100), this.pos[1] + (Math.sin(leftHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
 				drawSerratedCircle([this.pos[0] + (Math.cos(rightHand) * 100), this.pos[1] + (Math.sin(rightHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
+				if (this.health != this.maxHealth) {
+					ctx.beginPath();
+					ctx.fillStyle = 'red';
+					ctx.lineWidth = 6;
+					ctx.rect(this.pos[0] - 150, this.pos[1] - 270, 300, 10);
+					ctx.fill();
+					ctx.stroke();
+					ctx.closePath();
+					ctx.beginPath();
+					ctx.fillStyle = 'green';
+					ctx.rect(this.pos[0] - 144, this.pos[1] - 264, 288 * (this.currentHealth/this.maxHealth), 6);
+					ctx.fill();
+					console.log(this.currentHealth);
+					this.currentHealth += ((this.currentHealth + this.regen > this.maxHealth) ? (this.maxHealth - this.currentHealth) : (this.regen))
+				}
 			}
 			break;
 		case 1:
