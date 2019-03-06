@@ -424,13 +424,13 @@ Boss.prototype.draw = function(bodyColor) {
 					ctx.beginPath();
 					ctx.fillStyle = 'red';
 					ctx.lineWidth = 6;
-					ctx.rect(this.pos[0] - 150, this.pos[1] - 270, 300, 10);
+					ctx.rect(this.pos[0] - 150, this.pos[1] - 270, 300, 20);
 					ctx.fill();
 					ctx.stroke();
 					ctx.closePath();
 					ctx.beginPath();
 					ctx.fillStyle = 'green';
-					ctx.rect(this.pos[0] - 144, this.pos[1] - 264, 288 * (this.currentHealth/this.maxHealth), 6);
+					ctx.rect(this.pos[0] - 144, this.pos[1] - 264, 288 * (this.health/this.maxHealth), 12);
 					ctx.fill();
 				}
 			}
