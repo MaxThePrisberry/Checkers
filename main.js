@@ -424,7 +424,7 @@ Boss.prototype.draw = function(bodyColor) {
 					ctx.beginPath();
 					ctx.fillStyle = 'red';
 					ctx.lineWidth = 6;
-					ctx.rect(this.pos[0] - 150, this.pos[1] - 270, 300, 20);
+					ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 270), 300, 20);
 					ctx.fill();
 					ctx.stroke();
 					ctx.closePath();
@@ -474,7 +474,7 @@ Boss.prototype.update = function() {
 	this.pos[1] += (this.pos[1]+uVector[1]>=this.size && this.pos[1]+uVector[1]<=map.height-this.size) ? uVector[1] : 0;
 	
 	for (let k = 0; k < player.minions.length; k++){
-		if (mapDistanceAway(this.pos, player.minions[k].pos) <= player.minions[k].reach){
+		if (mapDistanceAway(this.pos, player.minions[k].pos) <= player.minions[k].reach + this.size){
 			this.health -= player.minions[k].attack;
 		}
 	}
