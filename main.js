@@ -471,13 +471,13 @@ Boss.prototype.update = function() {
 		this.turning = angleFromUpInRadians(this.pos, player.pos);
 	} else {
 		let tempTimer = new Date();
-		if ((tempTimer.getTime() - startTime) % 300 <= 2){
+		if ((tempTimer.getTime() - startTime) % 3000 <= 2){
 			let randAng = Math.round(Math.random() * 359);
 			this.turning = randAng;
 			this.vel[0] = Math.cos(randAng) * 100;
 			this.vel[1] = Math.sin(randAng) * 100;
 			this.draw(this.attacking);
-		} else if ((tempTimer.getTime() - startTime) % 300 <= 150){
+		} else if ((tempTimer.getTime() - startTime) % 3000 <= 1500){
 			this.draw(this.attacking);
 		}
 	}
