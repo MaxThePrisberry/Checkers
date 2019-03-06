@@ -437,13 +437,13 @@ Boss.prototype.draw = function(bodyColor) {
 		ctx.beginPath();
 		ctx.fillStyle = 'red';
 		ctx.lineWidth = 6;
-		ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 270), 300, 20);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 70), 300, 20);
 		ctx.fill();
 		ctx.stroke();
 		ctx.closePath();
 		ctx.beginPath();
 		ctx.fillStyle = 'green';
-		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 50), boardYToCanvasY(this.pos[1] - this.size - 45), 300 * (this.health/this.maxHealth), 15);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 65), 300 * (this.health/this.maxHealth), 15);
 		ctx.fill();
 	}
 }
