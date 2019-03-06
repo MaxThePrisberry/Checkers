@@ -420,19 +420,6 @@ Boss.prototype.draw = function(bodyColor) {
 				//draw the hands
 				drawSerratedCircle([this.pos[0] + (Math.cos(leftHand) * 100), this.pos[1] + (Math.sin(leftHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
 				drawSerratedCircle([this.pos[0] + (Math.cos(rightHand) * 100), this.pos[1] + (Math.sin(rightHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
-				if (this.health != this.maxHealth) {
-					ctx.beginPath();
-					ctx.fillStyle = 'red';
-					ctx.lineWidth = 6;
-					ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 270), 300, 20);
-					ctx.fill();
-					ctx.stroke();
-					ctx.closePath();
-					ctx.beginPath();
-					ctx.fillStyle = 'green';
-					ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 265), 300 * (this.health/this.maxHealth), 15);
-					ctx.fill();
-				}
 			}
 			break;
 		case 1:
@@ -445,6 +432,19 @@ Boss.prototype.draw = function(bodyColor) {
 				drawSerratedCircle([this.pos[0] + 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
 			}
 			break;
+	}
+	if (this.health != this.maxHealth) {
+		ctx.beginPath();
+		ctx.fillStyle = 'red';
+		ctx.lineWidth = 6;
+		ctx.rect(boardXToCanvasX(this.pos[0] - 150), boardYToCanvasY(this.pos[1] - 270), 300, 20);
+		ctx.fill();
+		ctx.stroke();
+		ctx.closePath();
+		ctx.beginPath();
+		ctx.fillStyle = 'green';
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 50), boardYToCanvasY(this.pos[1] - this.size - 45), 300 * (this.health/this.maxHealth), 15);
+		ctx.fill();
 	}
 }
 
