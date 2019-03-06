@@ -218,6 +218,9 @@ Map.prototype.drawObjects = function() {
 Map.prototype.drawEnemies = function() {
 	for (let badGuy of this.badGuys) {
 		badGuy.update();
+		if (badGuy.health <= 0){
+			this.badGuys.remove(badGuy);
+		}
 	}
 }
 
@@ -327,6 +330,8 @@ function Minion(pos,color,radius=minionRadius) {
 	this.radius = radius;
 	this.maxSpeed = 2;
 	this.velocity = [0,0];
+	this.reach = 50;
+	this.attack = 1;
 }
 
 Minion.prototype.draw = function() {
@@ -453,6 +458,12 @@ Boss.prototype.update = function() {
 	this.pos[0] += (this.pos[0]+uVector[0]>=this.size && this.pos[0]+uVector[0]<=map.width-this.size) ? uVector[0] : 0;
 	this.pos[1] += (this.pos[1]+uVector[1]>=this.size && this.pos[1]+uVector[1]<=map.height-this.size) ? uVector[1] : 0;
 	
+	for (let k = 0; k < player.minions.length; k++){
+		if (mapDistanceAway(this.pos, player.minions[k].pos) <= player.minions[k].reach){
+			this.health -= player.minions[k].attack;
+		}
+	}
+			
 	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
 		if (player.currentHealth > 0 && player.currentHealth - this.attack >= 0) {
 			player.currentHealth -= this.attack;
