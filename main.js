@@ -383,6 +383,7 @@ function Boss(pos, type){
 	this.pos = pos;
 	this.type = type;
 	this.vel = [0, 0];
+	this.attacking = false;
 	switch (type) {
 		case 0:
 			this.color = 'red';
@@ -408,7 +409,7 @@ function Boss(pos, type){
 	this.turning = 0.5 * Math.PI;
 }
 
-Boss.prototype.draw = function(bodyColor) {
+Boss.prototype.draw = function(aggravated) {
 	let leftHand = angleFromUpInRadians([0, 0], [Math.cos(this.turning), Math.sin(this.turning)]) - (0.3 * Math.PI);
 	let rightHand = leftHand + (0.6 * Math.PI);
 	switch (this.type) {
@@ -424,12 +425,21 @@ Boss.prototype.draw = function(bodyColor) {
 			break;
 		case 1:
 			if (withinScreen(this.pos, 600, 600)) {
-				//draw the dude
-				drawSerratedCircle(this.pos, 300, 30, 0.5, bodyColor);
-				
-				//draw the eyes
-				drawSerratedCircle([this.pos[0] - 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
-				drawSerratedCircle([this.pos[0] + 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
+				if (aggravated){
+					//draw the dude
+					drawSerratedCircle(this.pos, 300, 30, 0.5, "purple");
+
+					//draw the eyes
+					drawSerratedCircle([this.pos[0] - 100, this.pos[1]], (300 * 0.2), 10, 0.8, "purple");
+					drawSerratedCircle([this.pos[0] + 100, this.pos[1]], (300 * 0.2), 10, 0.8, "purple");
+				} else {
+					//draw the dude
+					drawSerratedCircle(this.pos, 300, 30, 0.5, "#00ff00");
+
+					//draw the eyes
+					drawSerratedCircle([this.pos[0] - 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
+					drawSerratedCircle([this.pos[0] + 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
+				}
 			}
 			break;
 	}
@@ -449,22 +459,26 @@ Boss.prototype.draw = function(bodyColor) {
 }
 
 Boss.prototype.update = function() {
-	let tempTimer = new Date();
-	if ((tempTimer.getTime() - startTime) % 300 >= -1 && (tempTimer.getTime() - startTime) % 300 <= 1) {
-		if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
-			if (player.currentHealth > 0 && player.currentHealth - this.attack >= 0) {
-				player.currentHealth -= this.attack;
-			}
-			this.turning = angleFromUpInRadians(this.pos, player.pos);
-			this.vel[0] = Math.cos(this.turning) * 100;
-			this.vel[1] = Math.sin(this.turning) * 100;
-			this.draw('orange');
-		} else {
+	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach){
+		this.attacking = true;
+	} else {
+		this.attacking = false;
+	}
+	if (this.attacking){
+		if (player.currentHealth > 0) {
+			player.currentHealth -= this.attack;
+		}
+		this.turning = angleFromUpInRadians(this.pos, player.pos);
+	} else {
+		let tempTimer = new Date();
+		if ((tempTimer.getTime() - startTime) % 300 <= 2){
 			let randAng = Math.round(Math.random() * 359);
 			this.turning = randAng;
 			this.vel[0] = Math.cos(randAng) * 100;
 			this.vel[1] = Math.sin(randAng) * 100;
-			this.draw('black');
+			this.draw(this.attacking);
+		} else if ((tempTimer.getTime() - startTime) % 300 <= 150){
+			this.draw(this.attacking);
 		}
 	}
 	
@@ -477,16 +491,6 @@ Boss.prototype.update = function() {
 		if (mapDistanceAway(this.pos, player.minions[k].pos) <= player.minions[k].reach + this.size){
 			this.health -= player.minions[k].attack;
 		}
-	}
-			
-	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
-		if (player.currentHealth > 0 && player.currentHealth - this.attack >= 0) {
-			player.currentHealth -= this.attack;
-		}
-		this.turning = angleFromUpInRadians(this.pos, player.pos);
-		this.draw('orange');
-	} else {
-		this.draw('black');
 	}
 }
 
