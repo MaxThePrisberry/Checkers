@@ -16,7 +16,10 @@ var player = new Player([map.width/2,map.height/2],50,3);
 
 var mouseLocation = [110, 0];
 
-const resourceMap = ["Wood"];//Which resources are available. Same order as the resources are stored in player
+var timer = new Date();
+var startTime = timer.getTime();
+
+const resourceMap = ["Wood", "Potatoes"];//Which resources are available. Same order as the resources are stored in player
 
 var keystates = [false,false,false,false];//If key is pressed. Left, Right, Up, and Down keys respectively
 
@@ -26,12 +29,24 @@ function withinScreen(pos,width,height) { //Returns if an object should be drawn
 	return pos[0] < (player.pos[0]+canvas.width/2+width/2) && pos[0] > (player.pos[0]-canvas.width/2-width/2) && pos[1] < (player.pos[1]+canvas.height/2+height/2) && pos[1] > (player.pos[1]-canvas.height/2-height/2);
 }
 
+function toDegrees (angle) {
+  return angle * (180 / Math.PI);
+}
+
+function angleFromUpInRadians(pos, target){
+	return (target[0] - pos[0] < 0) ? ((Math.PI) + Math.atan((target[1] - pos[1])/(target[0] - pos[0]))):(Math.atan((target[1] - pos[1])/(target[0] - pos[0])));
+}
+
 function boardXToCanvasX(posx) { //Returns board x-position's x-coordinate on the canvas
 	return canvas.width/2 + (posx-player.pos[0]);
 }
 
 function boardYToCanvasY(posy) { //Returns board y-position's y-coordinate on the canvas
 	return canvas.height/2 + (posy-player.pos[1]);
+}
+
+function mapDistanceAway(start, finish) {
+	return Math.sqrt(Math.pow(start[0] - finish[0], 2) + Math.pow(start[1] - finish[1], 2));
 }
 
 function distMagnitude([xposone,yposone],[xpostwo,ypostwo]) {
@@ -73,6 +88,32 @@ function vectorMultiply(vector,multiplier) {
 	return [vector[0]*multiplier,vector[1]*multiplier];
 }
 
+function drawSerratedCircle(pos, radius, serrates, indent, fillcolor) {
+	ctx.beginPath();
+	let startingX = boardXToCanvasX(pos[0]);
+	let startingY = boardYToCanvasY(pos[1]);
+	let moveX = startingX + Math.cos(0) * radius * indent;
+	let moveY = startingY + Math.sin(0) * radius * indent;
+	let shift = Math.PI/serrates;
+	let totalRotation = shift;
+	ctx.moveTo(moveX, moveY);
+	for (let x = 0; x < serrates; x++) {
+		moveX = startingX + Math.cos(totalRotation) * radius;
+		moveY = startingY + Math.sin(totalRotation) * radius;
+		ctx.lineTo(moveX, moveY);
+		totalRotation += shift;
+		moveX = startingX + Math.cos(totalRotation) * radius * indent;
+		moveY = startingY + Math.sin(totalRotation) * radius * indent;
+		ctx.lineTo(moveX, moveY);
+		totalRotation += shift;
+	}
+	ctx.lineWidth = 20;
+	ctx.strokeStyle = "black";
+	ctx.stroke();
+	ctx.fillStyle = fillcolor;
+	ctx.fill();
+}
+
 //REYNOLD'S BOIDS HELPER FUNCTIONS
 
 function ruleOne(minionNum) { //Cohesion towards player
@@ -94,6 +135,7 @@ function ruleTwo(minionNum) { //Separation from other Minions
 function mouseMove(event) {
 	mouseLocation[0] = event.clientX;
 	mouseLocation[1] = event.clientY;
+	mouseLocation[2] = angleFromUpInRadians([canvas.width/2, canvas.height/2], [event.clientX, event.clientY]);
 }
 
 function keyPress(event) {
@@ -139,10 +181,11 @@ function keyUp(event) {
 
 //MAP
 
-function Map(width,height,trees=[new Tree([1000, 1000], 300)]) { // width: int, height: int, trees: Tree[]
+function Map(width,height,trees=[new Tree([1000, 1000], 150)]) { // width: int, height: int, trees: Tree[]
 	this.width = width;
 	this.height = height;
 	this.trees = trees;
+	this.badGuys = [new Boss([300, 300], 0)];
 }
 
 Map.prototype.drawLandscape = function() {
@@ -172,6 +215,12 @@ Map.prototype.drawObjects = function() {
 	}
 }
 
+Map.prototype.drawEnemies = function() {
+	for (let badGuy of this.badGuys) {
+		badGuy.update();
+	}
+}
+
 //TREE
 
 function Tree(pos,size) {
@@ -181,34 +230,11 @@ function Tree(pos,size) {
 }
 
 Tree.prototype.draw = function() {
-	if (withinScreen(this.pos,this.size,this.size)) { //Only draw tree if part of it can be seen by the user
+	if (withinScreen(this.pos,this.size * 2,this.size * 2)) { //Only draw tree if part of it can be seen by the user
 		let relative = 1;
 		for (let y = 1; y <= 3; y++) {
-			ctx.beginPath();
-			let startingX = boardXToCanvasX(this.pos[0]);
-			let startingY = boardYToCanvasY(this.pos[1]);
-			let moveX = startingX;
-			let moveY = startingY - this.size * 0.8 * (relative - 0.2);
-			let shift = Math.PI/this.points;
-			let totalRotation = shift;
-			ctx.moveTo(moveX, moveY);
-			for (let x = 0; x <= this.points; x++) {
-				moveX = startingX + Math.cos(totalRotation) * this.size * relative;
-				moveY = startingY + Math.sin(totalRotation) * this.size * relative;
-				ctx.lineTo(moveX, moveY);
-				totalRotation += shift;
-				moveX = startingX + Math.cos(totalRotation) * this.size * 0.8 * relative;
-				moveY = startingY + Math.sin(totalRotation) * this.size * 0.8 * relative;
-				ctx.lineTo(moveX, moveY);
-				totalRotation += shift;
-			}
-			ctx.closePath();
-			ctx.lineWidth = 20;
-			ctx.strokeStyle = "black";
-			ctx.stroke();
-			ctx.fillStyle = "green";
-			ctx.fill();
-			relative -= 0.3
+			drawSerratedCircle(this.pos, this.size * (relative - 0.2), this.points, 0.8, "green");
+			relative -= 0.3;
 		}
 	}
 }
@@ -221,16 +247,18 @@ function Player(pos,radius,speed) {
 	this.radius = radius;
 	this.speed = speed;
 	this.minions = [];
-	this.resources = [0];//Wood
+	this.resources = [0, 0];//Wood
 	this.color = "#ffcc00";
-	this.rotation;
+	this.currentHealth = 100;
+	this.maxHealth = 100;
+	this.regen = 1;
 }
 
 Player.prototype.draw = function() {
 	let bodyBorderWidth = 20;
 	let handSizeRatio = 0.3;
 	//calculate rotation
-	let angleLeft = (Math.atan(Math.abs(canvas.width/2 - mouseLocation[0])/Math.abs(canvas.height/2 - mouseLocation[1])) - (0.3 * Math.PI));
+	let angleLeft = angleFromUpInRadians([canvas.width/2, canvas.height/2], [mouseLocation[0], mouseLocation[1]]) - (0.3 * Math.PI);
 	let angleRight = angleLeft + (0.6 * Math.PI);
 	//draw the body with a border of black
 	ctx.beginPath();
@@ -245,45 +273,12 @@ Player.prototype.draw = function() {
 	//draw the hands
 	ctx.beginPath();
 	ctx.fillStyle = this.color;
-	if (mouseLocation[0] >= canvas.width/2 && mouseLocation[1] <= canvas.height/2) {
-		ctx.arc(canvas.width/2 + (Math.sin(angleLeft) * this.radius), canvas.height/2 - (Math.cos(angleLeft) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-		ctx.closePath();
-		ctx.strokeStyle = "black";
-		ctx.lineWidth = bodyBorderWidth;
-		ctx.stroke();
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(canvas.width/2 + (Math.sin(angleRight) * this.radius), canvas.height/2 - (Math.cos(angleRight) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);	
-	} else if (mouseLocation[0] >= canvas.width/2 && mouseLocation[1] >= canvas.height/2) {
-		ctx.arc(canvas.width/2 + (Math.sin(angleLeft) * this.radius), canvas.height/2 + (Math.cos(angleLeft) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-		ctx.closePath();
-		ctx.strokeStyle = "black";
-		ctx.lineWidth = bodyBorderWidth;
-		ctx.stroke();
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(canvas.width/2 + (Math.sin(angleRight) * this.radius), canvas.height/2 + (Math.cos(angleRight) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-	} else if (mouseLocation[0] <= canvas.width/2 && mouseLocation[1] >= canvas.height/2) {
-		ctx.arc(canvas.width/2 - (Math.sin(angleLeft) * this.radius), canvas.height/2 + (Math.cos(angleLeft) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-		ctx.closePath();
-		ctx.strokeStyle = "black";
-		ctx.lineWidth = bodyBorderWidth;
-		ctx.stroke();
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(canvas.width/2 - (Math.sin(angleRight) * this.radius), canvas.height/2 + (Math.cos(angleRight) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-	} else if (mouseLocation[0] <= canvas.width/2 && mouseLocation[1] <= canvas.height/2) {
-		ctx.arc(canvas.width/2 - (Math.sin(angleLeft) * this.radius), canvas.height/2 - (Math.cos(angleLeft) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-		ctx.closePath();
-		ctx.strokeStyle = "black";
-		ctx.lineWidth = bodyBorderWidth;
-		ctx.stroke();
-		ctx.fill();
-		ctx.beginPath();
-		ctx.arc(canvas.width/2 - (Math.sin(angleRight) * this.radius), canvas.height/2 - (Math.cos(angleRight) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
-	}
-	ctx.strokeStyle = "black";
-	ctx.lineWidth = bodyBorderWidth;
+	ctx.arc(canvas.width/2 + (Math.cos(angleLeft) * this.radius), canvas.height/2 + (Math.sin(angleLeft) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
+	ctx.closePath();
+	ctx.stroke();
+	ctx.fill();
+	ctx.beginPath();
+	ctx.arc(canvas.width/2 + (Math.cos(angleRight) * this.radius), canvas.height/2 + (Math.sin(angleRight) * this.radius), this.radius * handSizeRatio, 0, 2*Math.PI);
 	ctx.stroke();
 	ctx.fill();
 	
@@ -291,6 +286,22 @@ Player.prototype.draw = function() {
 	for (let i=0;i<this.minions.length;i++) {
 		this.minions[i].move(i);
 		this.minions[i].draw();
+	}
+	
+	if (this.currentHealth != this.maxHealth) {
+		ctx.beginPath();
+		ctx.fillStyle = 'red';
+		ctx.lineWidth = 4;
+		ctx.rect(canvas.width/2 - 50, canvas.height/2 - 90, 100, 10);
+		ctx.fill();
+		ctx.stroke();
+		ctx.closePath();
+		ctx.beginPath();
+		ctx.fillStyle = 'green';
+		ctx.rect(canvas.width/2 - 48, canvas.height/2 - 88, 96 * (this.currentHealth/this.maxHealth), 6);
+		ctx.fill();
+		console.log(this.currentHealth);
+		this.currentHealth += ((this.currentHealth + this.regen > this.maxHealth) ? (this.maxHealth - this.currentHealth) : (this.regen))
 	}
 }
 
@@ -361,12 +372,111 @@ Minion.prototype.keepInMap = function() {
 	}
 }
 
+//BOSSES
+
+function Boss(pos, type){
+	this.pos = pos;
+	this.type = type;
+	this.vel = [0, 0];
+	switch (type) {
+		case 0:
+			this.color = 'red';
+			this.health = 100;
+			this.attack = 3;
+			this.size = 100;
+			this.reach = 60;
+			this.speed = 1;
+			break;
+		case 1: 
+			this.color = 'black';
+			this.health = 1000;
+			this.attack = 20;
+			this.size = 300;
+			this.reach = 200;
+			this.speed = 1;
+			break;
+		default:
+			console.log("Bro that ain't a real boss type.");
+	}
+	this.turning = 0.5 * Math.PI;
+}
+
+Boss.prototype.draw = function(bodyColor) {
+	let leftHand = angleFromUpInRadians([0, 0], [Math.cos(this.turning), Math.sin(this.turning)]) - (0.3 * Math.PI);
+	let rightHand = leftHand + (0.6 * Math.PI);
+	switch (this.type) {
+		case 0:
+			if (withinScreen(this.pos, 200, 200)) {
+				//draw the dude
+				drawSerratedCircle(this.pos, 100, 30, 0.9, 'red');
+				
+				//draw the hands
+				drawSerratedCircle([this.pos[0] + (Math.cos(leftHand) * 100), this.pos[1] + (Math.sin(leftHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
+				drawSerratedCircle([this.pos[0] + (Math.cos(rightHand) * 100), this.pos[1] + (Math.sin(rightHand) * 100)], (100 * 0.3), 10, 0.8, this.color);
+			}
+			break;
+		case 1:
+			if (withinScreen(this.pos, 600, 600)) {
+				//draw the dude
+				drawSerratedCircle(this.pos, 300, 30, 0.5, bodyColor);
+				
+				//draw the eyes
+				drawSerratedCircle([this.pos[0] - 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
+				drawSerratedCircle([this.pos[0] + 100, this.pos[1]], (300 * 0.2), 10, 0.8, "#00ff00");
+			}
+			break;
+	}
+}
+
+Boss.prototype.update = function() {
+	let tempTimer = new Date();
+	if ((tempTimer.getTime() - startTime) % 300 >= -1 && (tempTimer.getTime() - startTime) % 300 <= 1) {
+		if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
+			if (player.currentHealth > 0 && player.currentHealth - this.attack >= 0) {
+				player.currentHealth -= this.attack;
+			}
+			this.turning = angleFromUpInRadians(this.pos, player.pos);
+			this.vel[0] = Math.cos(this.turning) * 100;
+			this.vel[1] = Math.sin(this.turning) * 100;
+			this.draw('orange');
+		} else {
+			let randAng = Math.round(Math.random() * 359);
+			this.turning = randAng;
+			this.vel[0] = Math.cos(randAng) * 100;
+			this.vel[1] = Math.sin(randAng) * 100;
+			this.draw('black');
+		}
+	}
+	
+	let uVector = unitVector(this.vel);
+	uVector = [uVector[0]*this.speed,uVector[1]*this.speed];
+	this.pos[0] += (this.pos[0]+uVector[0]>=this.size && this.pos[0]+uVector[0]<=map.width-this.size) ? uVector[0] : 0;
+	this.pos[1] += (this.pos[1]+uVector[1]>=this.size && this.pos[1]+uVector[1]<=map.height-this.size) ? uVector[1] : 0;
+	
+	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
+		if (player.currentHealth > 0 && player.currentHealth - this.attack >= 0) {
+			player.currentHealth -= this.attack;
+		}
+		this.turning = angleFromUpInRadians(this.pos, player.pos);
+		this.draw('orange');
+	} else {
+		this.draw('black');
+	}
+}
+
 //STATS
 
 function drawStats() {
 	let pos = [10,30];
+	ctx.beginPath();
+	ctx.strokeStyle = "black";
+	ctx.fillStyle = "#663300";
+	ctx.lineWidth = 10;
+	ctx.rect(0, 0, canvas.width * 0.25, 30 * resourceMap.length + 10);
+	ctx.stroke();
+	ctx.fill();
 	ctx.font = "30px Arial";
-	ctx.fillStyle = "black";
+	ctx.fillStyle = "#cccccc";
 	for (let i=0;i<resourceMap.length;i++,pos[1]+=30) {
 		ctx.fillText(resourceMap[i] + ": " + player.resources[i],pos[0],pos[1]);
 	}
@@ -379,10 +489,11 @@ function draw() {
 	map.drawLandscape();
 	player.move();
 	player.draw();
+	map.drawEnemies();
 	map.drawObjects();
 	drawStats();
 }
 
 //player.minions = [new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue")];
-
+//Date.getTime()
 setInterval(draw,15);//Close enough to 16.666 seconds, 1000/60
