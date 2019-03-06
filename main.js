@@ -432,8 +432,6 @@ Boss.prototype.draw = function(bodyColor) {
 					ctx.fillStyle = 'green';
 					ctx.rect(this.pos[0] - 144, this.pos[1] - 264, 288 * (this.currentHealth/this.maxHealth), 6);
 					ctx.fill();
-					console.log(this.currentHealth);
-					this.currentHealth += ((this.currentHealth + this.regen > this.maxHealth) ? (this.maxHealth - this.currentHealth) : (this.regen))
 				}
 			}
 			break;
