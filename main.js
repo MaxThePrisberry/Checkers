@@ -469,18 +469,21 @@ Boss.prototype.update = function() {
 			player.currentHealth -= this.attack;
 		}
 		this.turning = angleFromUpInRadians(this.pos, player.pos);
+		this.vel[0] = Math.cos(this.turning) * 100 * this.speed;
+		this.vel[1] = Math.sin(this.turning) * 100 * this.speed;
 		this.draw(true);
 	} else {
 		let tempTimer = new Date();
 		if ((tempTimer.getTime() - startTime) % 3000 <= 2){
 			let randAng = Math.round(Math.random() * 359);
 			this.turning = randAng;
-			this.vel[0] = Math.cos(randAng) * 100;
-			this.vel[1] = Math.sin(randAng) * 100;
-			this.draw(false);
-		} else if ((tempTimer.getTime() - startTime) % 3000 <= 1500){
-			this.draw(false);
+			this.vel[0] = Math.cos(randAng) * 100 * this.speed;
+			this.vel[1] = Math.sin(randAng) * 100 * this.speed;
+		} else if ((tempTimer.getTime() - startTime) % 3000 > 1500){
+			this.vel[0] = 0;
+			this.vel[1] = 0;
 		}
+		this.draw(false);
 	}
 	
 	let uVector = unitVector(this.vel);
