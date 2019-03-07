@@ -259,11 +259,11 @@ function Item(pos, id, level){
 
 Item.prototype.draw = function(){
 	if (this.id == 1){
-		if (withinScreen(this.pos, 15 + this.level, 15 + this.level)){
+		if (withinScreen(this.pos, 10 + this.level, 10 + this.level)){
 			ctx.beginPath();
-			ctx.arc(boardXToCanvasX(this.pos[0]), boardYToCanvasY(this.pos[1]), 15 + this.level, 0, 2*Math.PI);
+			ctx.arc(boardXToCanvasX(this.pos[0]), boardYToCanvasY(this.pos[1]), 10 + this.level, 0, 2*Math.PI);
 			ctx.closePath();
-			ctx.lineWidth = 3;
+			ctx.lineWidth = 5;
 			ctx.strokeStyle = 'black';
 			ctx.fillStyle = 'gold';
 			ctx.stroke();
@@ -530,20 +530,26 @@ Boss.prototype.update = function() {
 
 //STATS
 
-function drawStats() {
-	let pos = [10,30];
+function drawOverlay() {
 	ctx.beginPath();
 	ctx.strokeStyle = "black";
 	ctx.fillStyle = "#663300";
 	ctx.lineWidth = 10;
-	ctx.rect(0, 0, canvas.width * 0.25, 30 * resourceMap.length + 10);
+	ctx.rect(canvas.width/2 - 40, canvas.height - 30, 80, 30);
+	ctx.closePath();
+	ctx.beginPath();
+	ctx.strokeStyle = "black";
+	ctx.fillStyle = "gold";
+	ctx.lineWidth = 5;
+	ctx.arc(canvas.width/2 - 25, canvas.height - 15, 12, 0, 2*Math.PI);
+	ctx.closePath()
 	ctx.stroke();
 	ctx.fill();
-	ctx.font = "30px Arial";
+	ctx.beginPath();
+	ctx.font = "20px Arial";
 	ctx.fillStyle = "#cccccc";
-	for (let i=0;i<resourceMap.length;i++,pos[1]+=30) {
-		ctx.fillText(resourceMap[i] + ": " + player.resources[i],pos[0],pos[1]);
-	}
+	ctx.fillText("Test", canvas.width/2 - 10, canvas.height - 25);
+	ctx.closePath();
 }
 
 //DRAW
@@ -556,7 +562,7 @@ function draw() {
 	map.drawItems();
 	map.drawEnemies();
 	map.drawObjects();
-	drawStats();
+	drawOverlay();
 }
 
 //player.minions = [new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([980,920],"orange"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue"),new Minion([1020,880],"blue")];
