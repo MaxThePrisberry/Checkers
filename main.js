@@ -211,7 +211,9 @@ Map.prototype.drawLandscape = function() {
 }
 
 Map.prototype.drawItems = function() {
-	
+	for (let item of this.strewnItems) {
+		item.draw();
+	}
 }
 
 Map.prototype.drawObjects = function() {
