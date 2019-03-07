@@ -541,7 +541,7 @@ function drawOverlay() {
 	ctx.strokeStyle = "black";
 	ctx.fillStyle = "gold";
 	ctx.lineWidth = 5;
-	ctx.arc(canvas.width/2 - 25, canvas.height - 15, 12, 0, 2*Math.PI);
+	ctx.arc(canvas.width/2 - 35, canvas.height - 15, 12, 0, 2*Math.PI);
 	ctx.closePath()
 	ctx.stroke();
 	ctx.fill();
@@ -557,9 +557,9 @@ function drawOverlay() {
 function draw() {
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	map.drawLandscape();
+	map.drawItems();
 	player.move();
 	player.draw();
-	map.drawItems();
 	map.drawEnemies();
 	map.drawObjects();
 	drawOverlay();
