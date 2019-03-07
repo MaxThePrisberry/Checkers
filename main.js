@@ -185,6 +185,7 @@ function Map(width,height,trees=[new Tree([1000, 1000], 150)]) { // width: int, 
 	this.width = width;
 	this.height = height;
 	this.trees = trees;
+	this.strewnItems = [new Item([300, 500], 1, 0)];
 	this.badGuys = [new Boss([300, 300], 0)];
 }
 
@@ -207,6 +208,10 @@ Map.prototype.drawLandscape = function() {
 	}*/
 	ctx.fillStyle="#33cc33";
 	ctx.fillRect(xcoord,ycoord,width,height);
+}
+
+Map.prototype.drawItems = function() {
+	
 }
 
 Map.prototype.drawObjects = function() {
@@ -238,6 +243,29 @@ Tree.prototype.draw = function() {
 		for (let y = 1; y <= 3; y++) {
 			drawSerratedCircle(this.pos, this.size * (relative - 0.2), this.points, 0.8, "green");
 			relative -= 0.3;
+		}
+	}
+}
+
+//ITEMS
+
+function Item(pos, id, level){
+	this.pos = pos;
+	this.id = id;
+	this.level = level;
+}
+
+Item.prototype.draw = function(){
+	if (this.id == 1){
+		if (withinScreen(this.pos, 15 + this.level, 15 + this.level)){
+			ctx.beginPath();
+			ctx.arc(boardXToCanvasX(this.pos[0]), boardYToCanvasY(this.pos[1]), 15 + this.level, 0, 2*Math.PI);
+			ctx.closePath();
+			ctx.lineWidth = 3;
+			ctx.strokeStyle = 'black';
+			ctx.fillStyle = 'gold';
+			ctx.stroke();
+			ctx.fill();
 		}
 	}
 }
@@ -523,6 +551,7 @@ function draw() {
 	map.drawLandscape();
 	player.move();
 	player.draw();
+	map.drawItems();
 	map.drawEnemies();
 	map.drawObjects();
 	drawStats();
