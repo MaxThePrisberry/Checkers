@@ -185,8 +185,8 @@ function Map(width,height,trees=[new Tree([1000, 1000], 150)]) { // width: int, 
 	this.width = width;
 	this.height = height;
 	this.trees = trees;
-	this.strewnItems = [new Item([300, 500], 1, 0)];
-	this.badGuys = [new Boss([300, 300], 0)];
+	this.strewnItems = [];
+	this.badGuys = [new Boss([300, 300], 0, 10)];
 }
 
 Map.prototype.drawLandscape = function() {
@@ -230,6 +230,7 @@ Map.prototype.drawEnemies = function() {
 	for (let badGuy of this.badGuys) {
 		badGuy.update();
 		if (badGuy.health <= 0){
+			badGuy.deathSequence();
 			this.badGuys.splice(this.badGuys.indexOf(badGuy), 1);
 		}
 	}
@@ -414,17 +415,18 @@ Minion.prototype.keepInMap = function() {
 
 //BOSSES
 
-function Boss(pos, type){
+function Boss(pos, type, level){
 	this.pos = pos;
 	this.type = type;
 	this.vel = [0, 0];
+	this.level = level;
 	this.attacking = false;
 	switch (type) {
 		case 0:
 			this.color = 'red';
-			this.maxHealth = 10000;
-			this.health = 10000;
-			this.attack = 3;
+			this.maxHealth = 1000 * this.level;
+			this.health = 1000 * this.level;
+			this.attack = 1 * this.level;
 			this.size = 100;
 			this.reach = 60;
 			this.speed = 1;
@@ -530,6 +532,12 @@ Boss.prototype.update = function() {
 		if (mapDistanceAway(this.pos, player.minions[k].pos) <= player.minions[k].reach + this.size){
 			this.health -= player.minions[k].attack;
 		}
+	}
+}
+
+Boss.prototype.deathSequence = function(){
+	for (let k = 0; k < this.level; k++){
+		map.strewnItems.push(new Item([((Math.random() * 140) - 70 + this.pos[0]), ((Math.random() * 140) - 70 + this.pos[1])], 1, this.level));
 	}
 }
 
