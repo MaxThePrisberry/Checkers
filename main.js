@@ -117,7 +117,7 @@ function drawSerratedCircle(pos, radius, serrates, indent, fillcolor) {
 //REYNOLD'S BOIDS HELPER FUNCTIONS
 
 function ruleOne(minionNum) { //Cohesion towards player
-	return vectorDivide(vectorSubtract(player.pos,player.minions[minionNum].pos),100);
+	return vectorDivide(vectorSubtract(mouseLocation,player.minions[minionNum].pos),100);
 }
 
 function ruleTwo(minionNum) { //Separation from other Minions
@@ -268,7 +268,7 @@ Item.prototype.draw = function(){
 			ctx.beginPath();
 			ctx.arc(boardXToCanvasX(this.pos[0]), boardYToCanvasY(this.pos[1]), 10 + this.level, 0, 2*Math.PI);
 			ctx.closePath();
-			ctx.lineWidth = 5;
+			ctx.lineWidth = 8;
 			ctx.strokeStyle = 'black';
 			ctx.fillStyle = 'gold';
 			ctx.stroke();
