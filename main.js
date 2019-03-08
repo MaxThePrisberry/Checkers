@@ -214,8 +214,14 @@ Map.prototype.drawLandscape = function() {
 	} else {
 		height = (canvas.height/2-ycoord)+(this.height-player.pos[1]);
 	}*/
+	ctx.beginPath();
+	ctx.strokeStyle="black";
+	ctx.lineWeight=15;
 	ctx.fillStyle="#33cc33";
-	ctx.fillRect(xcoord,ycoord,width,height);
+	ctx.rect(xcoord,ycoord,width,height);
+	ctx.closePath();
+	ctx.fill();
+	ctx.stroke();
 }
 
 Map.prototype.drawItems = function() {
