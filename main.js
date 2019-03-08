@@ -543,14 +543,14 @@ function drawOverlay() {
 	ctx.strokeStyle = "black";
 	ctx.fillStyle = "gold";
 	ctx.lineWidth = 5;
-	ctx.arc(canvas.width/2 - 35, canvas.height - 30, 12, 0, 2*Math.PI);
+	ctx.arc(canvas.width/2 - 25, canvas.height - 30, 12, 0, 2*Math.PI);
 	ctx.closePath()
 	ctx.stroke();
 	ctx.fill();
 	ctx.beginPath();
 	ctx.font = "20px Arial";
-	ctx.fillStyle = "#cccccc";
-	ctx.fillText("Test", canvas.width/2 - 10, canvas.height - 25);
+	ctx.fillStyle = "gold";
+	ctx.fillText("Test", canvas.width/2, canvas.height - 25);
 	ctx.closePath();
 }
 
