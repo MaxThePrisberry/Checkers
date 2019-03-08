@@ -535,7 +535,7 @@ function drawOverlay() {
 	ctx.strokeStyle = "black";
 	ctx.fillStyle = "#663300";
 	ctx.lineWidth = 10;
-	ctx.rect(canvas.width/2 - 45, canvas.height - 30, 90, 30);
+	ctx.rect(canvas.width/2 - 45, canvas.height - 38, 90, 38);
 	ctx.closePath();
 	ctx.stroke();
 	ctx.fill();
