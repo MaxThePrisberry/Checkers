@@ -499,7 +499,7 @@ Boss.prototype.draw = function(aggravated) {
 		ctx.beginPath();
 		ctx.fillStyle = 'red';
 		ctx.lineWidth = 6;
-		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 70), 300, 20);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 30), boardYToCanvasY(this.pos[1] - this.size - 70), (this.size * 2) + 60, 20);
 		ctx.fill();
 		ctx.stroke();
 		ctx.closePath();
