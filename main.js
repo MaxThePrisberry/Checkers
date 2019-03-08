@@ -45,6 +45,14 @@ function boardYToCanvasY(posy) { //Returns board y-position's y-coordinate on th
 	return canvas.height/2 + (posy-player.pos[1]);
 }
 
+function canvasXToBoardX(posx) {
+	return player.pos[0] - canvas.width/2 + posx;
+}
+
+function canvasYToBoardY(posy) {
+	return player.pos[1] - canvas.height/2 + posy;
+}
+
 function mapDistanceAway(start, finish) {
 	return Math.sqrt(Math.pow(start[0] - finish[0], 2) + Math.pow(start[1] - finish[1], 2));
 }
@@ -117,7 +125,7 @@ function drawSerratedCircle(pos, radius, serrates, indent, fillcolor) {
 //REYNOLD'S BOIDS HELPER FUNCTIONS
 
 function ruleOne(minionNum) { //Cohesion towards player
-	return vectorDivide(vectorSubtract(mouseLocation,player.minions[minionNum].pos),100);
+	return vectorDivide(vectorSubtract([canvasXToBoardX(mouseLocation[0]), canvasYToBoardY(mouseLocation[1])],player.minions[minionNum].pos),100);
 }
 
 function ruleTwo(minionNum) { //Separation from other Minions
