@@ -347,11 +347,14 @@ Player.prototype.draw = function() {
 		ctx.fill();
 		ctx.stroke();
 		ctx.closePath();
-		ctx.beginPath();
-		ctx.fillStyle = 'green';
-		ctx.rect(canvas.width/2 - 48, canvas.height/2 - 88, 96 * (this.currentHealth/this.maxHealth), 6);
-		ctx.fill();
-		console.log(this.currentHealth);
+		if (this.currentHealth >= 0){
+			ctx.beginPath();
+			ctx.fillStyle = 'green';
+			ctx.rect(canvas.width/2 - 48, canvas.height/2 - 88, 96 * (this.currentHealth/this.maxHealth), 6);
+			ctx.fill();
+		}
+		
+		//REGENERATION
 		this.currentHealth += ((this.currentHealth + this.regen > this.maxHealth) ? (this.maxHealth - this.currentHealth) : (this.regen))
 	}
 }
@@ -514,7 +517,7 @@ Boss.prototype.update = function() {
 		this.attacking = false;
 	}
 	if (this.attacking){
-		if (player.currentHealth > 0) {
+		if (player.currentHealth > 0 && mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach) {
 			player.currentHealth -= this.attack;
 		}
 		this.turning = angleFromUpInRadians(this.pos, player.pos);
