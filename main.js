@@ -508,7 +508,7 @@ Boss.prototype.draw = function(aggravated) {
 }
 
 Boss.prototype.update = function() {
-	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach || (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + (6 * this.reach) && this.health != this.maxHealth));
+	if (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + this.reach || (mapDistanceAway(this.pos, player.pos) <= this.size + player.radius + (6 * this.reach) && this.health != this.maxHealth)){
 		this.attacking = true;
 	} else {
 		this.attacking = false;
