@@ -505,7 +505,7 @@ Boss.prototype.draw = function(aggravated) {
 		ctx.closePath();
 		ctx.beginPath();
 		ctx.fillStyle = 'green';
-		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 70), 300 * (this.health/this.maxHealth), 20);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 27), boardYToCanvasY(this.pos[1] - this.size - 67), ((this.size * 2) + 54) * (this.health/this.maxHealth), 14);
 		ctx.fill();
 	}
 }
