@@ -237,7 +237,7 @@ Map.prototype.drawObjects = function() {
 Map.prototype.drawEnemies = function() {
 	let tempTimer = new Date();
 	if ((tempTimer - startTime) % 15000 == 0){
-		this.badGuys.push(new Boss([Math.random() * this.width, Math.random() * this.height], 1, 15));
+		this.badGuys.push(new Boss([Math.random() * this.width, Math.random() * this.height], 0, 15));
 	}
 	for (let badGuy of this.badGuys) {
 		badGuy.update();
