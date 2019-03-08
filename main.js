@@ -213,6 +213,10 @@ Map.prototype.drawLandscape = function() {
 Map.prototype.drawItems = function() {
 	for (let item of this.strewnItems) {
 		item.draw();
+		if (item.id == 1 && mapDistanceAway(item.pos, player.pos) <= (player.radius + 10 + item.level)){
+			player.gold += 5 + (5 * item.level);
+			this.strewnItems.splice(this.strewnItems.indexOf(item), 1);
+		}
 	}
 }
 
@@ -285,6 +289,7 @@ function Player(pos,radius,speed) {
 	this.currentHealth = 100;
 	this.maxHealth = 100;
 	this.regen = 1;
+	this.gold = 0;
 }
 
 Player.prototype.draw = function() {
@@ -550,7 +555,7 @@ function drawOverlay() {
 	ctx.beginPath();
 	ctx.font = "20px Arial";
 	ctx.fillStyle = "gold";
-	ctx.fillText("Test", canvas.width/2, canvas.height - 15);
+	ctx.fillText(player.gold, canvas.width/2, canvas.height - 15);
 	ctx.closePath();
 }
 
