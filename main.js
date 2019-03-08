@@ -347,7 +347,7 @@ Player.prototype.draw = function() {
 		ctx.fill();
 		ctx.stroke();
 		ctx.closePath();
-		if (this.currentHealth >= 0){
+		if (this.currentHealth > 0){
 			ctx.beginPath();
 			ctx.fillStyle = 'green';
 			ctx.rect(canvas.width/2 - 48, canvas.height/2 - 88, 96 * (this.currentHealth/this.maxHealth), 6);
@@ -505,7 +505,7 @@ Boss.prototype.draw = function(aggravated) {
 		ctx.closePath();
 		ctx.beginPath();
 		ctx.fillStyle = 'green';
-		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 65), boardYToCanvasY(this.pos[1] - this.size - 65), 300 * (this.health/this.maxHealth), 15);
+		ctx.rect(boardXToCanvasX(this.pos[0] - this.size - 70), boardYToCanvasY(this.pos[1] - this.size - 70), 300 * (this.health/this.maxHealth), 20);
 		ctx.fill();
 	}
 }
