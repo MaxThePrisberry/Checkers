@@ -1,1 +1,9 @@
-
+.button {
+	transition-duration: 0.4s;
+	padding: 15px 30px;
+	border: black 2px solid;
+}
+.button:hover {
+	background-color: red;
+	color: white;
+}
