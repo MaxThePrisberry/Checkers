@@ -5,15 +5,23 @@ import (
 	"net/http"
 	"github.com/gorilla/websocket"
 	"log"
+	"helpers"
+	"errors"
 )
 
 const gamePort = ":1234"
 
 var upgrader = websocket.Upgrader{}
 var games []Game //Slice of current games open or running
+var pids []PlayerProfile //Slice of current players
 
 type PlayerProfile struct {
 	PName string
+	Conn net.conn
+}
+
+func sendPlayerPacket(pprof PlayerProfile) error {
+	
 }
 
 type Game struct {
@@ -24,7 +32,7 @@ type Game struct {
 func newConnection(w http.ResponseWriter, r *http.Request) {
 	//Enact websocket handshakes and get connection object
 	upgrader.CheckOrigin = func(r *http.Request) bool {return true} //Insecure: permits cross-site forgeries
-	_, err := upgrader.Upgrade(w, r, nil)//"conn" should be the first result here
+	conn, err := upgrader.Upgrade(w, r, nil)//"conn" should be the first result here
 	if err != nil {
 		fmt.Println("Error with the websocket connection upgrade.")
 		fmt.Println(err)
@@ -32,10 +40,13 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Make new player profile with new PID
+	const pid = RandString(10)
+	pids = append(pids, PlayerProfile{pid, conn})
 
-	//Send new PID to computer
+	//Send new PID to computer in a player info packet
 
 	//Call newGame()
+	go newGame(pid)
 }
 
 func newGame(pid string) {
