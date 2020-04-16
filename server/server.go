@@ -6,22 +6,25 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"helpers"
-	"errors"
+//	"errors"
 )
 
 const gamePort = ":1234"
 
 var upgrader = websocket.Upgrader{}
 var games []Game //Slice of current games open or running
-var pids []PlayerProfile //Slice of current players
+var pprofs map[string]PlayerProfile //Slice of current players
 
 type PlayerProfile struct {
 	PName string
-	Conn net.conn
+	Connection *websocket.Conn
 }
 
-func sendPlayerPacket(pprof PlayerProfile) error {
-	
+func sendPlayerPacket(pid string) (err error) {
+	message := append(append(append(append([]byte("{\"PID\":\""),[]byte(pid)...),[]byte("\",\"Name\":\"")...),[]byte(pprofs[pid].PName)...),[]byte("\"}")...)
+	fmt.Printf("Your message is: %v\n", string(message))
+	err = pprofs[pid].Connection.WriteMessage(websocket.TextMessage,message)
+	return
 }
 
 type Game struct {
@@ -34,16 +37,22 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool {return true} //Insecure: permits cross-site forgeries
 	conn, err := upgrader.Upgrade(w, r, nil)//"conn" should be the first result here
 	if err != nil {
-		fmt.Println("Error with the websocket connection upgrade.")
 		fmt.Println(err)
 		return
 	}
 
-	//Make new player profile with new PID
-	const pid = RandString(10)
-	pids = append(pids, PlayerProfile{pid, conn})
+	//Make new new PID and player profile
+	pid := helpers.RandString(10)
+	for _, found := pprofs[pid]; found; _, found = pprofs[pid] {
+		pid = helpers.RandString(10)
+	}
+	pprofs[pid] = PlayerProfile{Connection:conn}
 
 	//Send new PID to computer in a player info packet
+	if err := sendPlayerPacket(pid); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	//Call newGame()
 	go newGame(pid)

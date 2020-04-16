@@ -18,13 +18,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	for {
-		messageType, p, err := conn.ReadMessage()
+		_, p, err := conn.ReadMessage() //The first arguement is messageType
 		if err != nil {
 			log.Println(err)
 			return
 		}
 		fmt.Printf("Just recieved this message: %v\n", string(p))
-		if err := conn.WriteMessage(messageType, append([]byte("You just sent this, right: "), p[:]...)); err != nil {
+		if err := conn.WriteMessage(websocket.TextMessage, append([]byte("You just sent this, right: "), p[:]...)); err != nil {
 			log.Println(err)
 			return
 		}
