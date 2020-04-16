@@ -6,24 +6,37 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"helpers"
-//	"errors"
+	"errors"
+	"encoding/json"
 )
 
 const gamePort = ":1234"
 
 var upgrader = websocket.Upgrader{}
 var games []Game //Slice of current games open or running
-var pprofs map[string]PlayerProfile //Slice of current players
+var pprofs map[string]*PlayerProfile //Slice of current players
 
 type PlayerProfile struct {
-	PName string
-	Connection *websocket.Conn
+	Name string
+	Conn *websocket.Conn
 }
 
 func sendPlayerPacket(pid string) (err error) {
-	message := append(append(append(append([]byte("{\"PID\":\""),[]byte(pid)...),[]byte("\",\"Name\":\"")...),[]byte(pprofs[pid].PName)...),[]byte("\"}")...)
+	message := append(append(append(append([]byte("{\"PID\":\""),[]byte(pid)...),[]byte("\",\"Name\":\"")...),[]byte(pprofs[pid].Name)...),[]byte("\"}")...)
 	fmt.Printf("Your message is: %v\n", string(message))
-	err = pprofs[pid].Connection.WriteMessage(websocket.TextMessage,message)
+	err = pprofs[pid].Conn.WriteMessage(websocket.TextMessage,message)
+	return
+}
+
+func readPlayerPacket(pid string, packet []byte) (err error) { //Reads and updates appropriate entry in pprofs
+	var ppacket map[string]string
+	if err = json.Unmarshal(packet, &ppacket); err != nil {
+		return
+	}
+	if ppacket["PID"] != pid {
+		return errors.New("PIDs don't match up in incomming packet and assigned PID.")
+	}
+	pprofs[pid].Name = ppacket["Name"]
 	return
 }
 
@@ -46,7 +59,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	for _, found := pprofs[pid]; found; _, found = pprofs[pid] {
 		pid = helpers.RandString(10)
 	}
-	pprofs[pid] = PlayerProfile{Connection:conn}
+	pprofs[pid] = &PlayerProfile{Conn:conn}
 
 	//Send new PID to computer in a player info packet
 	if err := sendPlayerPacket(pid); err != nil {
@@ -60,8 +73,18 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 
 func newGame(pid string) {
 	//Wait for new player info packet to signify that the computer is ready to be put into a game
+	_, packet, err := pprofs[pid].Conn.ReadMessage()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	if err = readPlayerPacket(pid, packet); err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	//Call findGame()
+	go findGame(pid)
 }
 
 func findGame(pid string) {
