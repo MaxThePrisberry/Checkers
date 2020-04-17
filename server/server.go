@@ -37,12 +37,13 @@ func readPlayerPacket(pid string, packet []byte) (err error) { //Reads and updat
 		return errors.New("PIDs don't match up in incomming packet and assigned PID.")
 	}
 	pprofs[pid].Name = ppacket["Name"]
+	fmt.Printf("Just finished manipulating this packet: %v\n", string(packet))
 	return
 }
 
 type Game struct {
 	P1PID, P2PID, Turn string
-	P1Checkers, P2Checkers [12][3]int
+	P1Checkers, P2Checkers [12][3]int //Each checker has: [x-coordinate, y-coordinate, king? (1==yes, 0==no)]
 }
 
 func newConnection(w http.ResponseWriter, r *http.Request) {
@@ -89,12 +90,49 @@ func newGame(pid string) {
 
 func findGame(pid string) {
 	//Search through the slice "games" for games with only one player. If found, add player and then call runGame() and return
+	for i, game := range games {
+		if game.P1PID != "" && game.P2PID == "" {
+			game.P2PID = pid
+			go runGame(i)
+			return
+		}
+	}
 
 	//Open a new Game and append it to the slice "games"
+	games = append(games, Game{P1PID:pid})
 }
 
 func runGame(gameIndex int) {
 	game := games[gameIndex]
+	game.Turn = game.P1PID
+	game.P1Checkers = [12][3]int{
+		{0,0,0},
+		{2,0,0},
+		{4,0,0},
+		{6,0,0},
+		{1,1,0},
+		{3,1,0},
+		{5,1,0},
+		{7,1,0},
+		{0,2,0},
+		{2,2,0},
+		{4,2,0},
+		{6,2,0},
+	}
+	game.P2Checkers = [12][3]int{
+		{1,7,0},
+		{3,7,0},
+		{5,7,0},
+		{7,7,0},
+		{0,6,0},
+		{2,6,0},
+		{4,6,0},
+		{6,6,0},
+		{1,5,0},
+		{3,5,0},
+		{5,5,0},
+		{7,5,0},
+	}
 	//Send the opposing player's info packet to each player
 
 	for len(game.P1Checkers) > 0 && len(game.P2Checkers) > 0 {
@@ -121,6 +159,8 @@ func PlayerMove(game *Game, pid string) bool {
 }
 
 func main() {
+	//Initialize the pprofs map
+	pprofs = make(map[string]*PlayerProfile)
 	//Have the newConnection function handle all connections
 	http.HandleFunc("/", newConnection)
 	//Start listening at gamePort
