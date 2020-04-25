@@ -27,6 +27,14 @@ type Game struct {
 	P1Checkers, P2Checkers [12][3]int //Each checker has: [x-coordinate, y-coordinate, king? (1==yes, 0==no)]
 }
 
+func flipCheckers(checkers [12][3]int) [12][3]int {
+	for i, _ := range checkers {
+		checkers[i][0] = 7 - checkers[i][0]
+		checkers[i][1] = 7 - checkers[i][1]
+	}
+	return checkers
+}
+
 func sendUniversalPacket(game *Game, pid string) (err error) {
 	//Put together packet
 	packet := make(map[string]interface{})
@@ -37,16 +45,17 @@ func sendUniversalPacket(game *Game, pid string) (err error) {
 		packet["fC"] = nil
 		packet["eC"] = nil
 	} else if game.P1PID == pid {
-		fmt.Println(game.P2PID)
 		packet["Name"] = pprofs[game.P2PID].Name
 		packet["Turn"] = game.P1Turn
 		packet["fC"] = game.P1Checkers
 		packet["eC"] = game.P2Checkers
 	} else { //game.P2PID == pid
+		fmt.Println("I'm here! ", game.P1PID)
 		packet["Name"] = pprofs[game.P1PID].Name
 		packet["Turn"] = !game.P1Turn
-		packet["fC"] = game.P2Checkers
-		packet["eC"] = game.P1Checkers
+		//One has to flip the checkers because the board is laid out from the view of Player 1
+		packet["fC"] = flipCheckers(game.P2Checkers)
+		packet["eC"] = flipCheckers(game.P1Checkers)
 	}
 
 	//Send packet to user
@@ -137,34 +146,38 @@ func runGame(gameIndex int) {
 	game := &games[gameIndex]
 	game.P1Turn = true
 	game.P1Checkers = [12][3]int{
-		{0,0,0},
-		{2,0,0},
-		{4,0,0},
-		{6,0,0},
-		{1,1,0},
-		{3,1,0},
-		{5,1,0},
-		{7,1,0},
-		{0,2,0},
-		{2,2,0},
-		{4,2,0},
-		{6,2,0},
+		{1,0,0},
+		{3,0,0},
+		{5,0,0},
+		{7,0,0},
+		{0,1,0},
+		{2,1,0},
+		{4,1,0},
+		{6,1,0},
+		{1,2,0},
+		{3,2,0},
+		{5,2,0},
+		{7,2,0},
 	}
 	game.P2Checkers = [12][3]int{
-		{1,7,0},
-		{3,7,0},
-		{5,7,0},
-		{7,7,0},
-		{0,6,0},
-		{2,6,0},
-		{4,6,0},
-		{6,6,0},
-		{1,5,0},
-		{3,5,0},
-		{5,5,0},
-		{7,5,0},
+		{0,7,0},
+		{2,7,0},
+		{4,7,0},
+		{6,7,0},
+		{1,6,0},
+		{3,6,0},
+		{5,6,0},
+		{7,6,0},
+		{0,5,0},
+		{2,5,0},
+		{4,5,0},
+		{6,5,0},
 	}
 	//Send the opposing player's info packet to each player
+	if err := sendUniversalPacket(game, game.P2PID); err != nil {
+		fmt.Println(err)
+		KickPlayer(game, game.P2PID)
+	}
 
 	var pid string
 	for len(game.P1Checkers) > 0 && len(game.P2Checkers) > 0 {
@@ -174,7 +187,7 @@ func runGame(gameIndex int) {
 			pid = game.P2PID
 		}
 
-		//Check if the connection for who's turn it is is still active. If not, remove all players' checkers and send the packet to the opposing player. Then remove the game, call newGame() for active player, and return
+		//Check if the connection for who's turn it is is still active. If not, call KickPlayer() and return
 
 		//Call PlayerMove(). If "false", remove all players' checkers and send the packet to the opposing player. Then remove the game, call newGame() for active player, and return
 		if noprob := PlayerMove(game, pid); !noprob {
@@ -187,6 +200,14 @@ func runGame(gameIndex int) {
 	//Send both players a board state packet to let them know the game is over
 
 	//Call newGame() for both players
+}
+
+func KickPlayer(game *Game, pid string) {
+	//Remove PID entry for player
+
+	//If in game, remove all players' checkers and send the packet to the opposing player
+
+	//Remove the game, call newGame() for active player, and return
 }
 
 func PlayerMove(game *Game, pid string) bool {
