@@ -50,7 +50,6 @@ func sendUniversalPacket(game *Game, pid string) (err error) {
 		packet["fC"] = game.P1Checkers
 		packet["eC"] = game.P2Checkers
 	} else { //game.P2PID == pid
-		fmt.Println("I'm here! ", game.P1PID)
 		packet["Name"] = pprofs[game.P1PID].Name
 		packet["Turn"] = !game.P1Turn
 		//One has to flip the checkers because the board is laid out from the view of Player 1
@@ -63,7 +62,7 @@ func sendUniversalPacket(game *Game, pid string) (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("Your message is: %v\n", string(b))
+	fmt.Printf("Just SENT: %v\n", string(b))
 	err = pprofs[pid].Conn.WriteMessage(websocket.TextMessage,b)
 	return
 }
@@ -87,7 +86,7 @@ func readUniversalPacket(pid string) (upacket map[string]interface{}, err error)
 	} else {
 		pprofs[pid].Name = playername
 	}
-	fmt.Printf("Just finished manipulating this packet: %v\n", string(packet))
+	fmt.Printf("Just RECIEVED: %v\n", string(packet))
 	return
 }
 
@@ -211,22 +210,31 @@ func KickPlayer(game *Game, pid string) {
 }
 
 func PlayerMove(game *Game, pid string) bool {
+	var moveLegal bool
 	for {
 		//Send the player with pid a game state packet, signifying that it's their turn
 		if err := sendUniversalPacket(game, pid); err != nil {
 			fmt.Println(err)
 		} else {
 			//Wait for move packet. If error occurs (a.k.a. connection cut), return "false"
-			_, err := readUniversalPacket(pid)//Should be 'upacket'
+			upacket, err := readUniversalPacket(pid)
 			if err != nil {
 				fmt.Println(err)
 				return false
 			}
 
 			//Check if move packet is legal.
+			moveLegal = true
 
 			//If legal, update players' checkers states in game and return "true". If not legal, do nothing and the for loop will repeat prompting the user for a move
-			return true
+			if moveLegal {
+				if game.P1Turn {
+					game.P1Checkers = upacket[mC]
+				} else {
+					game.P2Checkers = upacket[mC]
+				}
+				return true
+			}
 		}
 	}
 }
