@@ -24,15 +24,15 @@ type PlayerProfile struct {
 type Game struct {
 	P1PID, P2PID string
 	P1Turn bool
-	P1Checkers, P2Checkers [12][3]int //Each checker has: [x-coordinate, y-coordinate, king? (1==yes, 0==no)]
+	P1Checkers, P2Checkers [][3]int //Each checker has: [x-coordinate, y-coordinate, king? (1==yes, 0==no)]
 }
 
-func flipCheckers(checkers [12][3]int) [12][3]int {
-	for i, _ := range checkers {
-		checkers[i][0] = 7 - checkers[i][0]
-		checkers[i][1] = 7 - checkers[i][1]
+func flipCheckers(checkers [][3]int) [][3]int {
+	var flippedCheckers [][3]int
+	for _, val := range checkers {
+		flippedCheckers = append(flippedCheckers, [][3]int{{7 - val[0], 7 - val[1], val[2]}}...)
 	}
-	return checkers
+	return flippedCheckers
 }
 
 func sendUniversalPacket(game *Game, pid string) (err error) {
@@ -109,6 +109,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	//Send new PID to computer in a player info packet
 	if err := sendUniversalPacket(nil,pid); err != nil {
 		fmt.Println(err)
+		go KickPlayer(pid)
 		return
 	}
 
@@ -120,6 +121,7 @@ func newGame(pid string) {
 	//Wait for new player info packet to signify that the computer is ready to be put into a game
 	if _, err := readUniversalPacket(pid); err != nil {
 		fmt.Println(err)
+		go KickPlayer(pid)
 		return
 	}
 
@@ -144,7 +146,7 @@ func findGame(pid string) {
 func runGame(gameIndex int) {
 	game := &games[gameIndex]
 	game.P1Turn = true
-	game.P1Checkers = [12][3]int{
+	game.P1Checkers = [][3]int{
 		{1,0,0},
 		{3,0,0},
 		{5,0,0},
@@ -158,7 +160,7 @@ func runGame(gameIndex int) {
 		{5,2,0},
 		{7,2,0},
 	}
-	game.P2Checkers = [12][3]int{
+	game.P2Checkers = [][3]int{
 		{0,7,0},
 		{2,7,0},
 		{4,7,0},
@@ -172,14 +174,16 @@ func runGame(gameIndex int) {
 		{4,5,0},
 		{6,5,0},
 	}
-	//Send the opposing player's info packet to each player
+	//Send the opposing player's info packet to the player whose turn it isn't
+
 	if err := sendUniversalPacket(game, game.P2PID); err != nil {
 		fmt.Println(err)
-		KickPlayer(game, game.P2PID)
+		KickPlayer(game.P2PID)
+		return
 	}
 
 	var pid string
-	for len(game.P1Checkers) > 0 && len(game.P2Checkers) > 0 {
+	for !IsGameOver(game) {
 		if game.P1Turn {
 			pid = game.P1PID
 		} else {
@@ -191,6 +195,8 @@ func runGame(gameIndex int) {
 		//Call PlayerMove(). If "false", remove all players' checkers and send the packet to the opposing player. Then remove the game, call newGame() for active player, and return
 		if noprob := PlayerMove(game, pid); !noprob {
 			fmt.Println("Looks like we have a problem. ;)")
+			go KickPlayer(pid)
+			return
 		}
 
 		//Change turn in game
@@ -201,10 +207,12 @@ func runGame(gameIndex int) {
 	//Call newGame() for both players
 }
 
-func KickPlayer(game *Game, pid string) {
+func KickPlayer(pid string) {
+	fmt.Println("Kicking player with pid '%v'", pid)
 	//Remove PID entry for player
+	delete(pprofs, pid)
 
-	//If in game, remove all players' checkers and send the packet to the opposing player
+	//If in game, remove all players' checkers and send the packet to the opposing player -- sort out all aftermath of the dead game
 
 	//Remove the game, call newGame() for active player, and return
 }
@@ -215,6 +223,7 @@ func PlayerMove(game *Game, pid string) bool {
 		//Send the player with pid a game state packet, signifying that it's their turn
 		if err := sendUniversalPacket(game, pid); err != nil {
 			fmt.Println(err)
+			return false
 		} else {
 			//Wait for move packet. If error occurs (a.k.a. connection cut), return "false"
 			upacket, err := readUniversalPacket(pid)
@@ -223,20 +232,37 @@ func PlayerMove(game *Game, pid string) bool {
 				return false
 			}
 
-			//Check if move packet is legal.
 			moveLegal = true
+
+			//Convert the checkers array from the player from []interface{} to [][3]int
+			var movedCheckers [][3]int
+			if myCheckers, ok := upacket["mC"].([][3]int); ok {
+				//for _, checker := range myCheckers {
+				movedCheckers = append(movedCheckers, myCheckers...)
+				//}
+			} else {
+				fmt.Println("There was a problem turning 'mC' in the packet from the player to a [][3]int slice.")
+				moveLegal = false
+			}
+			//Check if move packet is legal.
 
 			//If legal, update players' checkers states in game and return "true". If not legal, do nothing and the for loop will repeat prompting the user for a move
 			if moveLegal {
 				if game.P1Turn {
-					game.P1Checkers = upacket[mC]
+					game.P1Checkers = movedCheckers
 				} else {
-					game.P2Checkers = upacket[mC]
+					game.P2Checkers = flipCheckers(movedCheckers)
 				}
 				return true
 			}
 		}
 	}
+}
+
+func IsGameOver(game *Game) bool {
+	//Run tests to check if given game is over or not
+
+	return false
 }
 
 func main() {
