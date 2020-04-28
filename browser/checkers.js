@@ -1,8 +1,8 @@
-var windowWidth, windowHeight, canvas, ctx, dpiratio, ws, gameStarted, assets=[], mouseLocation=[];
+var windowWidth, windowHeight, canvas, ctx, dpiratio, ws, gameStarted, assets=[], mouseLocation=[], initialized;
 var boardSize, topLeftW, topLeftH, squareSize;
-var enemyCheckers=[[1,2,1],[6,5,0],[1,4,0]], friendlyCheckers=[[2,1,1],[7,6,0],[3,4,0],[5,4,0]];
+var enemyCheckers=[[0,7,0],[2,7,0],[4,7,0],[6,7,0],[1,6,0],[3,6,0],[5,6,0],[7,6,0],[0,5,0],[2,5,0],[4,5,0],[6,5,0]], friendlyCheckers=[[1,0,0],[3,0,0],[5,0,0],[7,0,0],[0,1,0],[2,1,0],[4,1,0],[6,1,0],[1,2,0],[3,2,0],[5,2,0],[7,2,0]];
 var selectedChecker = -1, possibleMoves = [], selectedMove = -1;
-var buttons=[], loading=[], myName, opponentName; 
+var buttons=[], loading=[], myName, opponentName = "Jefe", myPID, opponentPID, myTurn; 
 ws = new WebSocket("ws://192.168.1.73:1234");
 
 function onLoad() {
@@ -13,6 +13,7 @@ function onLoad() {
 	ctx = canvas.getContext("2d");
 	gameStarted = false;
 	document.getElementById("endblock").style.visibility = "hidden";
+	initialized = false;
 	
 	gameLoop();
 }
@@ -254,6 +255,17 @@ function onClick(event) {
 		possibleMoves=[];
 		selectedChecker=-1;
 		selectedMove=-1;
+		
+		let checkerString = "";
+		for (let i = 0; i < friendlyCheckers.length; i++) {
+			checkerString = checkerString.concat("["+friendlyCheckers[i][0]+","+friendlyCheckers[i][1]+","+friendlyCheckers[i][2]+"]");
+			if (i!=friendlyCheckers.length-1) {
+				checkerString = checkerString.concat(",");
+			}
+		}
+		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
+		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
+		loading[0]=true;
 	}
 }
 
@@ -399,25 +411,67 @@ function update() {
 
 ws.onopen = function (event) {
 	console.log("Connection established with server.");
-	ws.send("Itsa me");
-	ws.send("Mario");
+	initialized = true;
 }
 ws.onclose = function() {
 	console.log("Connection closed with server.");
 }
 ws.onmessage = function(message) {
 	console.log(message.data);
+	let data = message.data;
+	data = data.trim();
+	data = JSON.parse(data);
+	try {
+		if (data.PID != myPID && data.PID != null && myPID != undefined) {
+			throw new Error('Leroy has changed the PID. What is that boy doing?!');
+		}
+		myPID = data.PID;
+	} catch (err) {}
+	try {
+		if (data.Name) {
+			opponentName = data.Name;
+		}
+	} catch (err){}
+	try {
+		if (data.fC) {
+			friendlyCheckers = data.fC;
+		}
+	} catch (err){}
+	try {
+		if (data.eC) {
+			enemyCheckers = data.eC;
+		}
+	} catch (err){}
+	try {
+		console.log(data.Turn);
+		myTurn = data.Turn;
+	} catch (err){}
+	
+	loading[0]=((myTurn==true)?(false):(true));
 }
 ws.onerror = function(error) {
 	console.log("Error: ", error);
 }
 
 function beginPlay() {
-	console.log("Game Initiated");
-	document.getElementById("beginblock").style.visibility = "hidden";
-	gameStarted = true;
-	loading = [true,0,0,0,0,0,true];
-	opponentName="Jeff";
+	if (initialized) {
+		console.log("Game Initiated");
+		document.getElementById("beginblock").style.visibility = "hidden";
+		gameStarted = true;
+		loading = [true,0,0,0,0,0,true];
+		myName=document.getElementById("nameinput").value;
+		let checkerString = "";
+		for (let i = 0; i < friendlyCheckers.length; i++) {
+			checkerString = checkerString.concat("["+friendlyCheckers[i][0]+","+friendlyCheckers[i][1]+","+friendlyCheckers[i][2]+"]");
+			if (i!=friendlyCheckers.length-1) {
+				checkerString = checkerString.concat(",");
+			}
+		}
+		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","mC":"'+checkerString+'"}');
+		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
+	} else {
+		alert("Still connecting with server. Please wait...");
+	}
 }
 
 function fix_dpi() {
