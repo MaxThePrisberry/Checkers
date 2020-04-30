@@ -7,7 +7,8 @@ import (
 	"log"
 	"helpers"
 	"errors"
-	"encoding/json"
+	"github.com/json-iterator/go"
+	"reflect"
 )
 
 const gamePort = ":1234"
@@ -25,6 +26,11 @@ type Game struct {
 	P1PID, P2PID string
 	P1Turn bool
 	P1Checkers, P2Checkers [][3]int //Each checker has: [x-coordinate, y-coordinate, king? (1==yes, 0==no)]
+}
+
+type ReceivedPacket struct {
+	PID, Name string
+	mC [][3]int
 }
 
 func flipCheckers(checkers [][3]int) [][3]int {
@@ -58,7 +64,7 @@ func sendUniversalPacket(game *Game, pid string) (err error) {
 	}
 
 	//Send packet to user
-	b, err := json.Marshal(packet)
+	b, err := jsoniter.Marshal(packet)
 	if err != nil {
 		return
 	}
@@ -67,25 +73,19 @@ func sendUniversalPacket(game *Game, pid string) (err error) {
 	return
 }
 
-func readUniversalPacket(pid string) (upacket map[string]interface{}, err error) { //Gets, reads, and returns information received from player
+func readUniversalPacket(pid string) (upacket ReceivedPacket, err error) { //Gets, reads, and returns information received from player
 	_, packet, err := pprofs[pid].Conn.ReadMessage()
 	if err != nil {
 		return
 	}
-	if err = json.Unmarshal(packet, &upacket); err != nil {
+	if err = jsoniter.Unmarshal(packet, &upacket); err != nil {
 		return
 	}
-	if upacket["PID"] != pid {
-		err = errors.New("PIDs don't match up in incomming packet and assigned PID.")
+	if upacket.PID != pid {
+		err = errors.New("PIDs don't match up in incoming packet and assigned PID.")
 		return
 	}
-	playername, ok := upacket["Name"].(string)
-	if !ok {
-		err = errors.New("The packet recieved from the player didn't have a string as the value for the key 'Name'")
-		return
-	} else {
-		pprofs[pid].Name = playername
-	}
+	pprofs[pid].Name = upacket.Name
 	fmt.Printf("Just RECIEVED: %v\n", string(packet))
 	return
 }
@@ -235,23 +235,17 @@ func PlayerMove(game *Game, pid string) bool {
 			moveLegal = true
 
 			//Convert the checkers array from the player from []interface{} to [][3]int
-			var movedCheckers [][3]int
-			if myCheckers, ok := upacket["mC"].([][3]int); ok {
-				//for _, checker := range myCheckers {
-				movedCheckers = append(movedCheckers, myCheckers...)
-				//}
-			} else {
-				fmt.Println("There was a problem turning 'mC' in the packet from the player to a [][3]int slice.")
-				moveLegal = false
-			}
+			fmt.Println(upacket)
+			fmt.Println(reflect.TypeOf(upacket.mC))
+
 			//Check if move packet is legal.
 
 			//If legal, update players' checkers states in game and return "true". If not legal, do nothing and the for loop will repeat prompting the user for a move
 			if moveLegal {
 				if game.P1Turn {
-					game.P1Checkers = movedCheckers
+					game.P1Checkers = upacket.mC
 				} else {
-					game.P2Checkers = flipCheckers(movedCheckers)
+					game.P2Checkers = flipCheckers(upacket.mC)
 				}
 				return true
 			}
