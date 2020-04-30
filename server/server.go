@@ -8,7 +8,6 @@ import (
 	"helpers"
 	"errors"
 	"github.com/json-iterator/go"
-	"reflect"
 )
 
 const gamePort = ":1234"
@@ -30,7 +29,7 @@ type Game struct {
 
 type ReceivedPacket struct {
 	PID, Name string
-	mC [][3]int
+	MC [][3]int
 }
 
 func flipCheckers(checkers [][3]int) [][3]int {
@@ -232,20 +231,18 @@ func PlayerMove(game *Game, pid string) bool {
 				return false
 			}
 
-			moveLegal = true
-
-			//Convert the checkers array from the player from []interface{} to [][3]int
-			fmt.Println(upacket)
-			fmt.Println(reflect.TypeOf(upacket.mC))
-
 			//Check if move packet is legal.
+			moveLegal = true
+			//Find checker that moved (old and new position)
+			//Recursively check possible moves
+			//Check that actual move is in possible moves
 
 			//If legal, update players' checkers states in game and return "true". If not legal, do nothing and the for loop will repeat prompting the user for a move
 			if moveLegal {
 				if game.P1Turn {
-					game.P1Checkers = upacket.mC
+					game.P1Checkers = upacket.MC
 				} else {
-					game.P2Checkers = flipCheckers(upacket.mC)
+					game.P2Checkers = flipCheckers(upacket.MC)
 				}
 				return true
 			}
