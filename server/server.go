@@ -15,6 +15,7 @@ const gamePort = ":1234"
 var upgrader = websocket.Upgrader{}
 var games []Game //Slice of current games open or running
 var pprofs map[string]*PlayerProfile //Slice of current players
+var codes map[string]int
 
 type PlayerProfile struct {
 	Name string
@@ -40,23 +41,23 @@ func flipCheckers(checkers [][3]int) [][3]int {
 	return flippedCheckers
 }
 
-func sendUniversalPacket(game *Game, pid string) (err error) {
+func sendUniversalPacket(game *Game, pid string, code string) (err error) {
 	//Put together packet
 	packet := make(map[string]interface{})
 	packet["PID"] = pid
 	if game == nil {
 		packet["Name"] = nil
-		packet["Turn"] = nil
+		packet["Code"] = nil
 		packet["fC"] = nil
 		packet["eC"] = nil
 	} else if game.P1PID == pid {
 		packet["Name"] = pprofs[game.P2PID].Name
-		packet["Turn"] = game.P1Turn
+		packet["Code"] = codes[code]
 		packet["fC"] = game.P1Checkers
 		packet["eC"] = game.P2Checkers
 	} else { //game.P2PID == pid
 		packet["Name"] = pprofs[game.P1PID].Name
-		packet["Turn"] = !game.P1Turn
+		packet["Code"] = codes[code]
 		//One has to flip the checkers because the board is laid out from the view of Player 1
 		packet["fC"] = flipCheckers(game.P2Checkers)
 		packet["eC"] = flipCheckers(game.P1Checkers)
@@ -106,7 +107,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	pprofs[pid] = &PlayerProfile{Conn:conn}
 
 	//Send new PID to computer in a player info packet
-	if err := sendUniversalPacket(nil,pid); err != nil {
+	if err := sendUniversalPacket(nil,pid,""); err != nil {
 		fmt.Println(err)
 		go KickPlayer(pid)
 		return
@@ -173,9 +174,10 @@ func runGame(gameIndex int) {
 		{4,5,0},
 		{6,5,0},
 	}
+
 	//Send the opposing player's info packet to the player whose turn it isn't
 
-	if err := sendUniversalPacket(game, game.P2PID); err != nil {
+	if err := sendUniversalPacket(game, game.P2PID, "NotTurn"); err != nil {
 		fmt.Println(err)
 		KickPlayer(game.P2PID)
 		return
@@ -220,7 +222,7 @@ func PlayerMove(game *Game, pid string) bool {
 	var moveLegal bool
 	for {
 		//Send the player with pid a game state packet, signifying that it's their turn
-		if err := sendUniversalPacket(game, pid); err != nil {
+		if err := sendUniversalPacket(game, pid, "YourTurn"); err != nil {
 			fmt.Println(err)
 			return false
 		} else {
@@ -259,6 +261,14 @@ func IsGameOver(game *Game) bool {
 func main() {
 	//Initialize the pprofs map
 	pprofs = make(map[string]*PlayerProfile)
+	//Initialize the codes map
+	codes = map[string]int{
+		"NotTurn":0,
+		"YourTurn":1,
+		"YouWin":2,
+		"YouLose":3,
+		"OthPlyDiscon":4, //Other Player Disconnected
+	}
 	//Have the newConnection function handle all connections
 	http.HandleFunc("/", newConnection)
 	//Start listening at gamePort
