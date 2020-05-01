@@ -191,9 +191,7 @@ func runGame(gameIndex int) {
 			pid = game.P2PID
 		}
 
-		//Check if the connection for who's turn it is is still active. If not, call KickPlayer() and return
-
-		//Call PlayerMove(). If "false", remove all players' checkers and send the packet to the opposing player. Then remove the game, call newGame() for active player, and return
+		//Call PlayerMove(). If "false", call KickPlayer()
 		if noprob := PlayerMove(game, pid); !noprob {
 			fmt.Println("Looks like we have a problem. ;)")
 			go KickPlayer(pid)
@@ -203,19 +201,49 @@ func runGame(gameIndex int) {
 		//Change turn in game
 		game.P1Turn = !game.P1Turn
 	}
-	//Send both players a board state packet to let them know the game is over
 
 	//Call newGame() for both players
 }
 
 func KickPlayer(pid string) {
-	fmt.Println("Kicking player with pid '%v'", pid)
+	fmt.Printf("Kicking player with pid '%v'\n", pid)
+	fmt.Println("Status before:")
+	fmt.Println(pprofs)
+	fmt.Println(games)
+
+	//If in game, send packet to the opposing player saying opponent disconnected -- sort out all aftermath of the dead game
+	for i, game := range games {
+		if game.P1PID == pid || game.P2PID == pid {//If player being kicked is in this game
+			//Find active player's PID
+			var otherPlayerPID string
+			if game.P1PID == pid {
+				otherPlayerPID = game.P2PID
+			} else if game.P2PID == pid {
+				otherPlayerPID = game.P1PID
+			}
+
+			//Tell active player that their opponent disconnected and send them to newGame()
+			if err := sendUniversalPacket(&games[i], otherPlayerPID, "OthPlyDiscon"); err != nil {
+				go KickPlayer(otherPlayerPID)
+			} else {
+				go newGame(otherPlayerPID)
+			}
+
+			//Remove the game
+			games[i] = games[len(games)-1]
+			games[len(games)-1] = Game{}
+			games = games[:len(games)-1]
+
+			break
+		}
+	}
+
 	//Remove PID entry for player
 	delete(pprofs, pid)
 
-	//If in game, remove all players' checkers and send the packet to the opposing player -- sort out all aftermath of the dead game
-
-	//Remove the game, call newGame() for active player, and return
+	fmt.Println("Status after:")
+	fmt.Println(pprofs)
+	fmt.Println(games)
 }
 
 func PlayerMove(game *Game, pid string) bool {
@@ -255,6 +283,9 @@ func PlayerMove(game *Game, pid string) bool {
 func IsGameOver(game *Game) bool {
 	//Run tests to check if given game is over or not
 
+	//If true, send both players a board state packet to let them know the game is over
+
+	//Return if game is over or not
 	return false
 }
 
