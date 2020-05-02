@@ -31,6 +31,7 @@ type Game struct {
 type ReceivedPacket struct {
 	PID, Name string
 	MC [][3]int
+	SC [][3]int
 }
 
 func flipCheckers(checkers [][3]int) [][3]int {
@@ -264,15 +265,79 @@ func PlayerMove(game *Game, pid string) bool {
 			//Check if move packet is legal.
 			moveLegal = true
 			//Find checker that moved (old and new position)
-			//Recursively check possible moves
-			//Check that actual move is in possible moves
+			newPos := [][3]int{}
+			oldPos := [][3]int{}
+			var originalCheckers [][3]int
+			if game.P1Turn {
+				originalCheckers = game.P1Checkers
+			} else {
+				originalCheckers = game.P2Checkers
+				upacket.MC = flipCheckers(upacket.MC)
+			}
+			for _, checker := range upacket.MC {//Find new position of moved checker
+				if iy := helpers.FindChecker(checker, originalCheckers); iy == -1 {
+					newPos = append(newPos,checker)
+				}
+			}
+			for _, checker := range originalCheckers {//Find new position of moved checker
+				if iy := helpers.FindChecker(checker, upacket.MC); iy == -1 {
+					oldPos = append(oldPos,checker)
+				}
+			}
+			if len(newPos) != 1 || len(oldPos) != 1 {
+				moveLegal = false
+			}
+
+			//Check if move was a normal adjacent square move and if so, was it legal
+			if moveLegal && (
+				(oldPos[0][2] == 1 &&//If it's a king
+				(oldPos[0][0]+1 == newPos[0][0] || oldPos[0][0]-1 == newPos[0][0]) &&
+				(oldPos[0][1]+1 == newPos[0][1] || oldPos[0][1]-1 == newPos[0][1])) ||
+				(oldPos[0][2] == 0 &&//If it's a normal P1 piece
+				(oldPos[0][0]+1 == newPos[0][0] || oldPos[0][0]-1 == newPos[0][0]) &&
+				(oldPos[0][1]+1 == newPos[0][1]) &&
+				game.P1Turn) ||
+				(oldPos[0][2] == 0 &&//If it's a normal P2 piece
+				(oldPos[0][0]+1 == newPos[0][0] || oldPos[0][0]-1 == newPos[0][0]) &&
+				(oldPos[0][1]-1 == newPos[0][1]) &&
+				!game.P1Turn)) {
+				//If the move was to an adjacent square, make sure that square was empty
+				for _, checker := range game.P1Checkers {
+					if checker[0] == newPos[0][0] && checker[1] == newPos[0][1] {
+						moveLegal = false
+						break
+					}
+				}
+				for _, checker := range game.P2Checkers {
+					if checker[0] == newPos[0][0] && checker[1] == newPos[0][1] {
+						moveLegal = false
+						break
+					}
+				}
+			} else if moveLegal &&//It was a jump
+				(((oldPos[0][0]+newPos[0][0]) % 2 != 0 || (oldPos[0][1]+newPos[0][1]) % 2 != 0) ||//And the jumps weren't by twos
+				(game.P1Turn && oldPos[0][2] != 1 && newPos[0][1] <= oldPos[0][1]) ||//A normal P1 piece is not moving forwards
+				(!game.P1Turn && oldPos[0][2] != 1 && newPos[0][1] >= oldPos[0][1])) {//A normal P2 piece is not moving forwards
+				moveLegal = false
+			}
+
+			//Check if the checker was illegally "crowned"
+			if moveLegal && !((game.P1Turn && newPos[0][1] == 7) || (!game.P1Turn && newPos[0][1] == 0)) && newPos[0][2] == 1 {
+				moveLegal = false
+			}
 
 			//If legal, update players' checkers states in game and return "true". If not legal, do nothing and the for loop will repeat prompting the user for a move
 			if moveLegal {
 				if game.P1Turn {
 					game.P1Checkers = upacket.MC
+					for _, checker := range upacket.MC {
+						game.P2Checkers = helpers.RemoveChecker(checker, game.P2Checkers)
+					}
 				} else {
-					game.P2Checkers = flipCheckers(upacket.MC)
+					game.P2Checkers = upacket.MC
+					for _, checker := range upacket.MC {
+						game.P2Checkers = helpers.RemoveChecker(checker, game.P1Checkers)
+					}
 				}
 				return true
 			}

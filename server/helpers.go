@@ -14,6 +14,24 @@ func FindString(x string, y []string) int {
 	return -1
 }
 
+func FindChecker(checker [3]int, checkers [][3]int) int {
+	for i, v := range checkers {
+		if v == checker {
+			return i
+		}
+	}
+	return -1
+}
+
+func RemoveChecker(checker [3]int, checkers [][3]int) [][3]int {
+	if len(checkers) <= 0 {
+		return checkers
+	}
+	checkers[FindChecker(checker, checkers)] = checkers[len(checkers)-1]
+	checkers[len(checkers)-1] = [3]int{}
+	return checkers[:len(checkers)-1]
+}
+
 func RandString(l int) (result string) {
 	rg := rand.New(rand.NewSource(time.Now().UnixNano()))
         const options = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
