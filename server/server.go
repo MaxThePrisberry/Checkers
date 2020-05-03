@@ -69,7 +69,7 @@ func sendUniversalPacket(game *Game, pid string, code string) (err error) {
 	if err != nil {
 		return
 	}
-	log.Printf("Packet to %v\n", pid)
+	log.Printf("Packet to %v at %v\n", pid, pprofs[pid].Conn.RemoteAddr().String())
 	err = pprofs[pid].Conn.WriteMessage(websocket.TextMessage,b)
 	return
 }
@@ -87,7 +87,7 @@ func readUniversalPacket(pid string) (upacket ReceivedPacket, err error) { //Get
 		return
 	}
 	pprofs[pid].Name = upacket.Name
-	log.Printf("Packet from %v\n", pid)
+	log.Printf("Packet from %v at %v\n", pid, pprofs[pid].Conn.RemoteAddr().String())
 	return
 }
 
