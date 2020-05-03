@@ -16,7 +16,7 @@ func FindString(x string, y []string) int {
 
 func FindChecker(checker [3]int, checkers [][3]int) int {
 	for i, v := range checkers {
-		if v == checker {
+		if v[0] == checker[0] && v[1] == checker[1] && v[2] == checker[2] {
 			return i
 		}
 	}

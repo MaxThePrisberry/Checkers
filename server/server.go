@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"os"
 	"net/http"
 	"github.com/gorilla/websocket"
 	"log"
@@ -69,7 +69,7 @@ func sendUniversalPacket(game *Game, pid string, code string) (err error) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("Just SENT: %v\n", string(b))
+	log.Printf("Packet to %v\n", pid)
 	err = pprofs[pid].Conn.WriteMessage(websocket.TextMessage,b)
 	return
 }
@@ -87,7 +87,7 @@ func readUniversalPacket(pid string) (upacket ReceivedPacket, err error) { //Get
 		return
 	}
 	pprofs[pid].Name = upacket.Name
-	fmt.Printf("Just RECIEVED: %v\n", string(packet))
+	log.Printf("Packet from %v\n", pid)
 	return
 }
 
@@ -96,7 +96,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 	upgrader.CheckOrigin = func(r *http.Request) bool {return true} //Insecure: permits cross-site forgeries
 	conn, err := upgrader.Upgrade(w, r, nil)//"conn" should be the first result here
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 
 	//Send new PID to computer in a player info packet
 	if err := sendUniversalPacket(nil,pid,""); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		go KickPlayer(pid)
 		return
 	}
@@ -121,7 +121,7 @@ func newConnection(w http.ResponseWriter, r *http.Request) {
 func newGame(pid string) {
 	//Wait for new player info packet to signify that the computer is ready to be put into a game
 	if _, err := readUniversalPacket(pid); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		go KickPlayer(pid)
 		return
 	}
@@ -179,7 +179,7 @@ func runGame(gameIndex int) {
 	//Send the opposing player's info packet to the player whose turn it isn't
 
 	if err := sendUniversalPacket(game, game.P2PID, "NotTurn"); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		KickPlayer(game.P2PID)
 		return
 	}
@@ -194,7 +194,7 @@ func runGame(gameIndex int) {
 
 		//Call PlayerMove(). If "false", call KickPlayer()
 		if noprob := PlayerMove(game, pid); !noprob {
-			fmt.Println("Looks like we have a problem. ;)")
+			log.Printf("PlayerMove() ran into a problem talking with the player (with PID %v)\n", pid)
 			go KickPlayer(pid)
 			return
 		}
@@ -203,14 +203,40 @@ func runGame(gameIndex int) {
 		game.P1Turn = !game.P1Turn
 	}
 
+	//Send a packet to each player telling them the outcome of the game
+	var P1code, P2code string
+	if game.P1Turn {
+		P1code = "YouLose"
+		P2code = "YouWin"
+	} else {
+		P1code = "YouWin"
+		P2code = "YouLose"
+	}
+	if err := sendUniversalPacket(game, game.P1PID, P1code); err != nil {
+		go KickPlayer(game.P1PID)
+		return
+	}
+	if err := sendUniversalPacket(game, game.P2PID, P2code); err != nil {
+		go KickPlayer(game.P2PID)
+		return
+	}
+
 	//Call newGame() for both players
+	go newGame(game.P1PID)
+	go newGame(game.P2PID)
+
+	//Remove the game
+	if len(games) == 0 {
+		games = []Game{}
+	} else {
+		games[gameIndex] = games[len(games)-1]
+		games[len(games)-1] = Game{}
+		games = games[:len(games)-1]
+	}
 }
 
 func KickPlayer(pid string) {
-	fmt.Printf("Kicking player with pid '%v'\n", pid)
-	fmt.Println("Status before:")
-	fmt.Println(pprofs)
-	fmt.Println(games)
+	log.Printf("Kicking player with pid '%v'\n", pid)
 
 	//If in game, send packet to the opposing player saying opponent disconnected -- sort out all aftermath of the dead game
 	for i, game := range games {
@@ -231,9 +257,13 @@ func KickPlayer(pid string) {
 			}
 
 			//Remove the game
-			games[i] = games[len(games)-1]
-			games[len(games)-1] = Game{}
-			games = games[:len(games)-1]
+			if len(games) == 0 {
+				games = []Game{}
+			} else {
+				games[i] = games[len(games)-1]
+				games[len(games)-1] = Game{}
+				games = games[:len(games)-1]
+			}
 
 			break
 		}
@@ -241,10 +271,6 @@ func KickPlayer(pid string) {
 
 	//Remove PID entry for player
 	delete(pprofs, pid)
-
-	fmt.Println("Status after:")
-	fmt.Println(pprofs)
-	fmt.Println(games)
 }
 
 func PlayerMove(game *Game, pid string) bool {
@@ -252,13 +278,13 @@ func PlayerMove(game *Game, pid string) bool {
 	for {
 		//Send the player with pid a game state packet, signifying that it's their turn
 		if err := sendUniversalPacket(game, pid, "YourTurn"); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return false
 		} else {
 			//Wait for move packet. If error occurs (a.k.a. connection cut), return "false"
 			upacket, err := readUniversalPacket(pid)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 				return false
 			}
 
@@ -288,6 +314,11 @@ func PlayerMove(game *Game, pid string) bool {
 				moveLegal = false
 			}
 
+			//Check that move was in the map
+			if moveLegal && (newPos[0][0]<0 || newPos[0][0]>7 || newPos[0][1]<0 || newPos[0][1]>7) {
+				moveLegal = false
+			}
+
 			//Check if move was a normal adjacent square move and if so, was it legal
 			if moveLegal && (
 				(oldPos[0][2] == 1 &&//If it's a king
@@ -302,27 +333,19 @@ func PlayerMove(game *Game, pid string) bool {
 				(oldPos[0][1]-1 == newPos[0][1]) &&
 				!game.P1Turn)) {
 				//If the move was to an adjacent square, make sure that square was empty
-				for _, checker := range game.P1Checkers {
-					if checker[0] == newPos[0][0] && checker[1] == newPos[0][1] {
-						moveLegal = false
-						break
-					}
-				}
-				for _, checker := range game.P2Checkers {
-					if checker[0] == newPos[0][0] && checker[1] == newPos[0][1] {
-						moveLegal = false
-						break
-					}
+				if !PositionEmpty(game, [2]int{newPos[0][0],newPos[0][1]}) {
+					moveLegal = false
 				}
 			} else if moveLegal &&//It was a jump
 				(((oldPos[0][0]+newPos[0][0]) % 2 != 0 || (oldPos[0][1]+newPos[0][1]) % 2 != 0) ||//And the jumps weren't by twos
 				(game.P1Turn && oldPos[0][2] != 1 && newPos[0][1] <= oldPos[0][1]) ||//A normal P1 piece is not moving forwards
-				(!game.P1Turn && oldPos[0][2] != 1 && newPos[0][1] >= oldPos[0][1])) {//A normal P2 piece is not moving forwards
+				(!game.P1Turn && oldPos[0][2] != 1 && newPos[0][1] >= oldPos[0][1]) ||//A normal P2 piece is not moving forwards
+				(newPos[0][0]+newPos[0][1])%2 == 0) {//The new position is on the wrong color of square
 				moveLegal = false
 			}
 
 			//Check if the checker was illegally "crowned"
-			if moveLegal && !((game.P1Turn && newPos[0][1] == 7) || (!game.P1Turn && newPos[0][1] == 0)) && newPos[0][2] == 1 {
+			if moveLegal && !((game.P1Turn && newPos[0][1] == 7) || (!game.P1Turn && newPos[0][1] == 0)) && newPos[0][2] == 1 && oldPos[0][2] == 0 {
 				moveLegal = false
 			}
 
@@ -330,13 +353,14 @@ func PlayerMove(game *Game, pid string) bool {
 			if moveLegal {
 				if game.P1Turn {
 					game.P1Checkers = upacket.MC
-					for _, checker := range upacket.MC {
+					for _, checker := range upacket.SC {
 						game.P2Checkers = helpers.RemoveChecker(checker, game.P2Checkers)
 					}
 				} else {
 					game.P2Checkers = upacket.MC
-					for _, checker := range upacket.MC {
-						game.P2Checkers = helpers.RemoveChecker(checker, game.P1Checkers)
+					upacket.SC = flipCheckers(upacket.SC)
+					for _, checker := range upacket.SC {
+						game.P1Checkers = helpers.RemoveChecker(checker, game.P1Checkers)
 					}
 				}
 				return true
@@ -346,15 +370,79 @@ func PlayerMove(game *Game, pid string) bool {
 }
 
 func IsGameOver(game *Game) bool {
-	//Run tests to check if given game is over or not
+	//Run tests to check if P1 in given game can move or not
+	//NEED TO CHECK IF THERE ARE NO CHECKERS AND IF ONE PLAYER CAN'T MAKE A MOVE BUT THE OTHER CAN
+	var fCheckers, eCheckers [][3]int
+	var possibleMoves [][2]int
+	if game.P1Turn {
+		fCheckers = game.P1Checkers
+		eCheckers = game.P2Checkers
+	} else {
+		fCheckers = game.P2Checkers
+		eCheckers = game.P1Checkers
+	}
+	for _, checker := range fCheckers {
+		//Collect possible normal moves
+		possibleJumps := [][2]int{}
+		if game.P1Turn {
+			possibleMoves = [][2]int{{checker[0]-1,checker[1]+1},{checker[0]+1,checker[1]+1}}
+		} else {
+			possibleMoves = [][2]int{{checker[0]-1,checker[1]-1},{checker[0]+1,checker[1]-1}}
+		}
+		if checker[2] == 1 {
+			possibleMoves = [][2]int{{checker[0]-1,checker[1]+1},{checker[0]+1,checker[1]+1},{checker[0]-1,checker[1]-1},{checker[0]+1,checker[1]-1}}
+		}
 
-	//If true, send both players a board state packet to let them know the game is over
+		//Check normal moves are on the map and aren't already filled with a checker. If filled with a checker, add to possibleJumps
+		for _, move := range possibleMoves {
+			if move[0]>=0 && move[0]<=7 && move[1]>=0 && move[1]<=7 {
+				if PositionEmpty(game,move) {
+					return false
+				} else {
+					possibleJumps = append(possibleJumps, [2]int{move[0]+(move[0]-checker[0]),move[1]+(move[1]-checker[1])})
+				}
+			}
+		}
 
-	//Return if game is over or not
-	return false
+		//Check that jumps are on the board, will jump to empty spot, and that will jump ENEMY checker
+		for _, jump := range possibleJumps {
+			if jump[0]>=0 && jump[0]<=7 && jump[1]>=0 && jump[1]<=7 && PositionEmpty(game,jump) {
+				for _, checker := range eCheckers {
+					if checker[0] == (checker[0]+(jump[0]-checker[0])/2) && checker[1] == (checker[1]+(jump[1]-checker[1])/2) {
+						return false
+					}
+				}
+			}
+		}
+	}
+
+	//If this code is reached, that means that the player whose turn it is doesn't have any possible moves and therefore the game is over
+	return true
+}
+
+func PositionEmpty(game *Game, position [2]int) bool {//Returns if there already is a checker in the given position in the given game
+	for _, checker := range game.P1Checkers {
+		if checker[0] == position[0] && checker[1] == position[1] {
+			return false
+		}
+	}
+	for _, checker := range game.P2Checkers {
+		if checker[0] == position[0] && checker[1] == position[1] {
+			return false
+		}
+	}
+	return true
 }
 
 func main() {
+	//Get logging up and running
+	f, err := os.OpenFile("LogFile.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+	    log.Fatalf("Error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+
 	//Initialize the pprofs map
 	pprofs = make(map[string]*PlayerProfile)
 	//Initialize the codes map
