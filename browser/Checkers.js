@@ -241,12 +241,18 @@ function onClick(event) {
 			findPossibleMoves([friendlyCheckers[selectedChecker][0],friendlyCheckers[selectedChecker][1],[]], friendlyCheckers[selectedChecker][2], false);
 		}
 	} else if (gameStarted && !loading[0] && (mouseLocation[0]>buttons[0][0]) && (mouseLocation[0]<buttons[0][0]+buttons[0][2]) && (mouseLocation[1]>buttons[0][1]) && (mouseLocation[1]<buttons[0][1]+buttons[0][3])) {
+		let deletedCheckers = "";
 		friendlyCheckers[selectedChecker][0]=possibleMoves[selectedMove][0];
 		friendlyCheckers[selectedChecker][1]=possibleMoves[selectedMove][1];
 		if (possibleMoves[selectedMove][2].length != 0) {
 			possibleMoves[selectedMove][2].sort(function(a,b){return b - a});
 		}
+		console.log(possibleMoves);
 		for (let i =0; i < possibleMoves[selectedMove][2].length; i++) {
+			deletedCheckers = deletedCheckers.concat("["+enemyCheckers[possibleMoves[selectedMove][2][i]][0]+","+enemyCheckers[possibleMoves[selectedMove][2][i]][1]+","+enemyCheckers[possibleMoves[selectedMove][2][i]][2]+"]");
+			if (i!=possibleMoves[selectedMove][2].length-1) {
+				deletedCheckers = deletedCheckers.concat(",");
+			}
 			enemyCheckers.splice(possibleMoves[selectedMove][2][i],1);
 		}
 		if (friendlyCheckers[selectedChecker][1]==7 && friendlyCheckers[selectedChecker][2]==0) {
@@ -263,8 +269,8 @@ function onClick(event) {
 				checkerString = checkerString.concat(",");
 			}
 		}
-		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
-		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
+		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","MC":['+checkerString+'],"SC":['+deletedCheckers+']}');
+		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","MC":['+checkerString+'],"SC":['+deletedCheckers+']}');
 		loading[0]=true;
 	}
 }
@@ -274,7 +280,7 @@ function findPossibleMoves(place, king, rejump) {
 		if ((place[0]>0) && (place[1]<7)){
 			if (!isTileOccupied([(place[0]-1),(place[1]+1)])) {
 				possibleMoves.push([place[0]-1,place[1]+1,place[2]]);
-			} else if (isEnemyChecker([(place[0]-1),(place[1]+1)]) != -1) {
+			} else if (isEnemyChecker([(place[0]-1),(place[1]+1)]) != -1 && (place[0]>1) && (place[1]<6)) {
 				if (!isTileOccupied([(place[0]-2),(place[1]+2)])) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]-1),(place[1]+1)]));
@@ -286,7 +292,7 @@ function findPossibleMoves(place, king, rejump) {
 		if ((place[0]<7) && (place[1]<7)){
 			if (!isTileOccupied([(place[0]+1),(place[1]+1)])) {
 				possibleMoves.push([place[0]+1,place[1]+1,place[2]]);
-			} else if (isEnemyChecker([(place[0]+1),(place[1]+1)]) != -1) {
+			} else if (isEnemyChecker([(place[0]+1),(place[1]+1)]) != -1 && (place[0]<6) && (place[1]<6)) {
 				if (!isTileOccupied([(place[0]+2),(place[1]+2)])) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]+1),(place[1]+1)]));
@@ -299,67 +305,67 @@ function findPossibleMoves(place, king, rejump) {
 			if ((place[0]>0) && (place[1]>0)){
 				if (!isTileOccupied([(place[0]-1),(place[1]-1)])) {
 					possibleMoves.push([place[0]-1,place[1]-1,place[2]]);
-				} else if (isEnemyChecker([(place[0]-1),(place[1]-1)]) != -1) {
+				} else if (isEnemyChecker([(place[0]-1),(place[1]-1)]) != -1 && (place[0]>1) && (place[1]>1)) {
 					if (!isTileOccupied([(place[0]-2),(place[1]-2)])) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]-1),(place[1]-1)]));
 						possibleMoves.push([place[0]-2,place[1]-2,copy]);
-						findPossibleMoves([place[0]-2,place[1]-2,copy], king, true);
+						findPossibleMoves([copy[0]-2,copy[1]-2,copy], king, true);
 					}
 				}
 			}
 			if ((place[0]<7) && (place[1]>0)){
 				if (!isTileOccupied([(place[0]+1),(place[1]-1)])) {
 					possibleMoves.push([place[0]+1,place[1]-1,place[2]]);
-				} else if (isEnemyChecker([(place[0]+1),(place[1]-1)]) != -1) {
+				} else if (isEnemyChecker([(place[0]+1),(place[1]-1)]) != -1 && (place[0]<6) && (place[1]>1)) {
 					if (!isTileOccupied([(place[0]+2),(place[1]-2)])) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]+1),(place[1]-1)]));
 						possibleMoves.push([place[0]+2,place[1]-2,copy]);
-						findPossibleMoves([place[0]+2,place[1]-2,copy], king, true);
+						findPossibleMoves([copy[0]+2,copy[1]-2,copy], king, true);
 					}
 				}
 			}
 		}
 	} else {
-		if ((place[0]>0) && (place[1]<7)){
+		if ((place[0]>1) && (place[1]<6)){
 			if (isEnemyChecker([(place[0]-1),(place[1]+1)]) != -1) {
 				if (!isTileOccupied([(place[0]-2),(place[1]+2)]) && !isPossibleMove([(place[0]-2),(place[1]+2)])) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]-1),(place[1]+1)]));
 					possibleMoves.push([place[0]-2,place[1]+2,copy]);
-					findPossibleMoves([place[0]-2,place[1]+2,copy], king, true);
+					findPossibleMoves([copy[0]-2,copy[1]+2,copy], king, true);
 				}
 			}
 		}
-		if ((place[0]<7) && (place[1]<7)){
+		if ((place[0]<6) && (place[1]<6)){
 			if (isEnemyChecker([(place[0]+1),(place[1]+1)]) != -1) {
 				if (!isTileOccupied([(place[0]+2),(place[1]+2)]) && !isPossibleMove([(place[0]+2),(place[1]+2)])) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]+1),(place[1]+1)]));
 					possibleMoves.push([place[0]+2,place[1]+2,copy]);
-					findPossibleMoves([place[0]+2,place[1]+2,copy], king, true);
+					findPossibleMoves([copy[0]+2,copy[1]+2,copy], king, true);
 				}
 			}
 		}
 		if (king) {
-			if ((place[0]>0) && (place[1]>0)){
+			if ((place[0]>1) && (place[1]>1)){
 				if (isEnemyChecker([(place[0]-1),(place[1]-1)]) != -1) {
 					if (!isTileOccupied([(place[0]-2),(place[1]-2)]) && !isPossibleMove([(place[0]-2),(place[1]-2)])) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]-1),(place[1]-1)]));
 						possibleMoves.push([place[0]-2,place[1]-2,copy]);
-						findPossibleMoves([place[0]-2,place[1]-2,copy], king, true);
+						findPossibleMoves([copy[0]-2,copy[1]-2,copy], king, true);
 					}
 				}
 			}
-			if ((place[0]<7) && (place[1]>0)){
+			if ((place[0]<6) && (place[1]>1)){
 				if (isEnemyChecker([(place[0]+1),(place[1]-1)]) != -1) {
 					if (!isTileOccupied([(place[0]+2),(place[1]-2)]) && !isPossibleMove([(place[0]+2),(place[1]-2)])) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]+1),(place[1]-1)]));
 						possibleMoves.push([place[0]+2,place[1]-2,copy]);
-						findPossibleMoves([place[0]+2,place[1]-2,copy], king, true);
+						findPossibleMoves([copy[0]+2,copy[1]-2,copy], king, true);
 					}
 				}
 			}
@@ -443,8 +449,25 @@ ws.onmessage = function(message) {
 		}
 	} catch (err){}
 	try {
-		console.log(data.Turn);
-		myTurn = data.Turn;
+		switch (data.Code) {
+			case 0://Not My Turn
+				myTurn = false;
+				break;
+			case 1://My Turn
+				myTurn = true;
+				break;
+			case 2://I Win
+				endPlay("You have won the game!");
+				break;
+			case 3://I Lose
+				endPlay("You have lost the game. Big Sad imminent.");
+				break;
+			case 4://Disconnect
+				endPlay("Your opponent was too intimidated. Win by default.");
+				break;
+			default:
+				throw new Error('Leroy decided to send us an invalid code. Possible wallhacks?');
+		}
 	} catch (err){}
 	
 	loading[0]=((myTurn==true)?(false):(true));
@@ -467,11 +490,32 @@ function beginPlay() {
 				checkerString = checkerString.concat(",");
 			}
 		}
-		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","mC":"'+checkerString+'"}');
-		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","mC":['+checkerString+']}');
+		console.log('{"PID":"'+myPID+'","Name":"'+myName+'","MC":['+checkerString+'],"SC":[]}');
+		ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","MC":['+checkerString+'],"SC":[]}');
 	} else {
 		alert("Still connecting with server. Please wait...");
 	}
+}
+
+function endPlay(message) {
+	document.getElementById("endblock").style.visibility = "visible";
+	document.getElementById("endmessage").innerHTML = message;
+}
+
+function restartPlay() {
+	console.log("Game Restarted");
+	document.getElementById("endblock").style.visibility = "hidden";
+	enemyCheckers=[[0,7,0],[2,7,0],[4,7,0],[6,7,0],[1,6,0],[3,6,0],[5,6,0],[7,6,0],[0,5,0],[2,5,0],[4,5,0],[6,5,0]];
+	friendlyCheckers=[[1,0,0],[3,0,0],[5,0,0],[7,0,0],[0,1,0],[2,1,0],[4,1,0],[6,1,0],[1,2,0],[3,2,0],[5,2,0],[7,2,0]];
+	let checkerString = "";
+	for (let i = 0; i < friendlyCheckers.length; i++) {
+		checkerString = checkerString.concat("["+friendlyCheckers[i][0]+","+friendlyCheckers[i][1]+","+friendlyCheckers[i][2]+"]");
+		if (i!=friendlyCheckers.length-1) {
+			checkerString = checkerString.concat(",");
+		}
+	}
+	loading[0] = true;
+	ws.send('{"PID":"'+myPID+'","Name":"'+myName+'","MC":['+checkerString+'],"SC":[]}');
 }
 
 function fix_dpi() {
