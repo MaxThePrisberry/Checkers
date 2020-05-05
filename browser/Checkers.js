@@ -310,7 +310,7 @@ function findPossibleMoves(place, king, rejump) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]-1),(place[1]-1)]));
 						possibleMoves.push([place[0]-2,place[1]-2,copy]);
-						findPossibleMoves([copy[0]-2,copy[1]-2,copy], king, true);
+						findPossibleMoves([place[0]-2,place[1]-2,copy], king, true);
 					}
 				}
 			}
@@ -322,7 +322,7 @@ function findPossibleMoves(place, king, rejump) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]+1),(place[1]-1)]));
 						possibleMoves.push([place[0]+2,place[1]-2,copy]);
-						findPossibleMoves([copy[0]+2,copy[1]-2,copy], king, true);
+						findPossibleMoves([place[0]+2,place[1]-2,copy], king, true);
 					}
 				}
 			}
@@ -334,7 +334,7 @@ function findPossibleMoves(place, king, rejump) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]-1),(place[1]+1)]));
 					possibleMoves.push([place[0]-2,place[1]+2,copy]);
-					findPossibleMoves([copy[0]-2,copy[1]+2,copy], king, true);
+					findPossibleMoves([place[0]-2,place[1]+2,copy], king, true);
 				}
 			}
 		}
@@ -344,7 +344,7 @@ function findPossibleMoves(place, king, rejump) {
 					let copy = place[2].slice(0);
 					copy.push(isEnemyChecker([(place[0]+1),(place[1]+1)]));
 					possibleMoves.push([place[0]+2,place[1]+2,copy]);
-					findPossibleMoves([copy[0]+2,copy[1]+2,copy], king, true);
+					findPossibleMoves([place[0]+2,place[1]+2,copy], king, true);
 				}
 			}
 		}
@@ -355,7 +355,7 @@ function findPossibleMoves(place, king, rejump) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]-1),(place[1]-1)]));
 						possibleMoves.push([place[0]-2,place[1]-2,copy]);
-						findPossibleMoves([copy[0]-2,copy[1]-2,copy], king, true);
+						findPossibleMoves([place[0]-2,place[1]-2,copy], king, true);
 					}
 				}
 			}
@@ -365,7 +365,7 @@ function findPossibleMoves(place, king, rejump) {
 						let copy = place[2].slice(0);
 						copy.push(isEnemyChecker([(place[0]+1),(place[1]-1)]));
 						possibleMoves.push([place[0]+2,place[1]-2,copy]);
-						findPossibleMoves([copy[0]+2,copy[1]-2,copy], king, true);
+						findPossibleMoves([place[0]+2,place[1]-2,copy], king, true);
 					}
 				}
 			}
